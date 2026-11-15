@@ -30,7 +30,7 @@
 
 ---
 
-Tired of typing `ssh root@203.0.113.10 -p 2222` and digging for passwords? Tuxius is a tiny, fast SSH manager that lives in your terminal — think Termius, but a single binary with no account, no cloud and no GUI.
+Tired of typing `ssh root@203.0.113.10 -p 2222` and digging for passwords? Tuxius is a tiny, fast SSH manager that lives in your terminal: save your servers once and connect with a single keystroke. It's one small binary — no account, no cloud, no GUI.
 
 - **One command** — `tuxius` opens a searchable list of your servers. Arrow keys, Enter, done.
 - **Passwordless after the first time** — give Tuxius the root password once; it installs an SSH key on the server and never stores the password.

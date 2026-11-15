@@ -23,7 +23,7 @@
 
 ---
 
-Her seferinde `ssh root@203.0.113.10 -p 2222` yazıp şifre aramaktan sıkıldın mı? Tuxius terminalde yaşayan küçük ve hızlı bir SSH yöneticisi — Termius gibi, ama hesap, bulut ya da arayüz yok; tek bir dosya.
+Her seferinde `ssh root@203.0.113.10 -p 2222` yazıp şifre aramaktan sıkıldın mı? Tuxius terminalde yaşayan küçük ve hızlı bir SSH yöneticisi: sunucularını bir kez kaydet, tek tuşla bağlan. Tek bir küçük dosya; hesap, bulut ya da arayüz yok.
 
 - **Tek komut** — `tuxius` yaz, sunucu listen gelsin. Ok tuşları, Enter, içeridesin.
 - **İlk seferden sonra şifresiz** — root şifresini bir kez gir; Tuxius sunucuya SSH anahtarı kurar ve şifreyi hiçbir yere kaydetmez.
