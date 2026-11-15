@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end test against a throwaway OpenSSH server in Docker.
+# With TUXIUS_E2E_EXTERNAL=1 it uses a server already listening on
+# 127.0.0.1:$TUXIUS_TEST_PORT (root / tuxius-test-pw) instead.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -11,11 +13,28 @@ CONTAINER=tuxius-test-sshd
 pass() { printf '\033[32m✔\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✘\033[0m %s\n' "$1"; exit 1; }
 
+EXTERNAL=${TUXIUS_E2E_EXTERNAL:-}
+WINDOWS=
+case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) WINDOWS=1 ;; esac
+if [ -n "$WINDOWS" ]; then
+    # Test against the OpenSSH that ships with Windows, not Git's copy.
+    export PATH="/c/Windows/System32/OpenSSH:$PATH"
+fi
+
 cargo build --quiet
-BIN="$(cargo metadata --format-version 1 --no-deps | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')/debug/tuxius"
+BIN="${CARGO_TARGET_DIR:-$PWD/target}/debug/tuxius${WINDOWS:+.exe}"
 [ -x "$BIN" ] || fail "binary not found at $BIN"
 
-docker build --quiet -t "$IMAGE" - >/dev/null <<EOF
+# Only the owner may read the file.
+private() {
+    if [ -n "$WINDOWS" ]; then
+        ! icacls "$(cygpath -w "$1")" | grep -qiE 'Everyone|BUILTIN\\Users|Authenticated Users'
+    else
+        [ "$(stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1")" = 600 ]
+    fi
+}
+
+[ -n "$EXTERNAL" ] || docker build --quiet -t "$IMAGE" - >/dev/null <<EOF
 FROM alpine:3.20
 RUN apk add --no-cache openssh && ssh-keygen -A \
  && echo "root:$PASSWORD" | chpasswd \
@@ -24,15 +43,18 @@ CMD ["/usr/sbin/sshd", "-D", "-e"]
 EOF
 
 SANDBOX=$(mktemp -d)
+[ -z "$WINDOWS" ] || SANDBOX=$(cygpath -m "$SANDBOX")
 cleanup() {
-    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    [ -n "$EXTERNAL" ] || docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
     ssh-keygen -R "[127.0.0.1]:$PORT" >/dev/null 2>&1 || true
     rm -rf "$SANDBOX"
 }
 trap cleanup EXIT
 
-docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-docker run -d --name "$CONTAINER" -p "127.0.0.1:$PORT:22" "$IMAGE" >/dev/null
+if [ -z "$EXTERNAL" ]; then
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    docker run -d --name "$CONTAINER" -p "127.0.0.1:$PORT:22" "$IMAGE" >/dev/null
+fi
 for _ in $(seq 30); do
     ssh-keyscan -p "$PORT" 127.0.0.1 >/dev/null 2>&1 && break
     sleep 1
@@ -59,9 +81,8 @@ grep -q 'auth = "password"' "$TUXIUS_HOME/servers.toml" || fail "password auth n
 [ "$(tx box-pw -- echo via-password)" = via-password ] || fail "password login"
 pass "add + connect with saved password"
 
-[ "$(stat -c %a "$TUXIUS_HOME/servers.toml" 2>/dev/null || stat -f %Lp "$TUXIUS_HOME/servers.toml")" = 600 ] \
-    || fail "servers.toml must be chmod 600"
-pass "config file is private (600)"
+private "$TUXIUS_HOME/servers.toml" || fail "servers.toml must be private"
+pass "config file is private"
 
 if echo "wrong" | tx add --name bad --host "root@127.0.0.1:$PORT" --password-stdin 2>/dev/null; then
     fail "wrong password should not be saved"
@@ -83,8 +104,7 @@ pass "remove"
 
 ssh-keygen -q -t ed25519 -N "" -C mine -f "$SANDBOX/mykey"
 tx key add --name mine --file "$SANDBOX/mykey"
-[ "$(stat -c %a "$TUXIUS_HOME/keys/mine" 2>/dev/null || stat -f %Lp "$TUXIUS_HOME/keys/mine")" = 600 ] \
-    || fail "imported key must be chmod 600"
+private "$TUXIUS_HOME/keys/mine" || fail "imported key must be private"
 tx key list | grep -q mine || fail "key list"
 pass "import key"
 

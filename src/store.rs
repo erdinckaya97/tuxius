@@ -1,9 +1,9 @@
 use crate::i18n::{fill, t};
+use crate::private;
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
-use std::fs::{self, DirBuilder, OpenOptions};
+use std::fs;
 use std::io::Write;
-use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -116,17 +116,12 @@ impl Store {
 
     pub fn save(&self) -> Result<()> {
         let dir = self.path.parent().context("invalid config path")?;
-        DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
+        private::create_dir(dir)?;
 
         let tmp = self.path.with_extension("toml.tmp");
         let text = toml::to_string_pretty(self)?;
         {
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .mode(0o600)
-                .open(&tmp)?;
+            let mut file = private::create_file(&tmp, false)?;
             file.write_all(text.as_bytes())?;
             file.sync_all()?;
         }

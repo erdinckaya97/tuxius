@@ -7,8 +7,20 @@ const ACCENT: u8 = 220;
 
 fn color_enabled() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
-    *ENABLED
-        .get_or_init(|| std::env::var_os("NO_COLOR").is_none() && std::io::stderr().is_terminal())
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("NO_COLOR").is_none() && std::io::stderr().is_terminal() && ansi_ready()
+    })
+}
+
+/// Older Windows consoles only understand color codes once asked to.
+#[cfg(windows)]
+fn ansi_ready() -> bool {
+    crossterm::ansi_support::supports_ansi()
+}
+
+#[cfg(not(windows))]
+fn ansi_ready() -> bool {
+    true
 }
 
 pub fn paint(text: &str, code: &str) -> String {

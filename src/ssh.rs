@@ -2,7 +2,6 @@ use crate::i18n::{fill, t};
 use crate::keys;
 use crate::store::{Auth, Server};
 use anyhow::{Context, Result, bail};
-use std::os::unix::process::CommandExt;
 use std::process::{Command, Stdio};
 
 /// When set, the binary acts as an `SSH_ASKPASS` helper and prints this value.
@@ -134,8 +133,9 @@ pub fn check_password(server: &Server, password: &str) -> Result<()> {
     run(cmd)
 }
 
-/// Replaces the current process with ssh: an interactive session, or
-/// `remote` run on the server when it's not empty.
+/// Hands the terminal to ssh: an interactive session, or `remote` run on the
+/// server when it's not empty. Exits with ssh's status on Windows; replaces
+/// the process elsewhere.
 pub fn connect(server: &Server, remote: &[String]) -> Result<()> {
     if server.auth == Auth::Key && !keys::exists(server.key_name()) {
         bail!(fill(t().key_missing, &[server.key_name(), &server.name]));
@@ -144,6 +144,18 @@ pub fn connect(server: &Server, remote: &[String]) -> Result<()> {
         Auth::Password => server.password.as_deref(),
         Auth::Key => None,
     };
-    let err = command(server, password, &[])?.args(remote).exec();
-    Err(err).context("could not start ssh")
+    let mut cmd = command(server, password, &[])?;
+    cmd.args(remote);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        Err(cmd.exec()).context("could not start ssh")
+    }
+    #[cfg(not(unix))]
+    {
+        let status = cmd
+            .status()
+            .context("could not run ssh (is OpenSSH installed?)")?;
+        std::process::exit(status.code().unwrap_or(1));
+    }
 }

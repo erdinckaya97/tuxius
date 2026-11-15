@@ -1,9 +1,9 @@
 use crate::i18n::{fill, t};
+use crate::private;
 use crate::store::config_dir;
 use anyhow::{Context, Result, bail};
-use std::fs::{self, DirBuilder, OpenOptions};
+use std::fs;
 use std::io::Write;
-use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -54,7 +54,7 @@ pub fn validate_name(name: &str) -> Result<(), String> {
 
 fn make_dir() -> Result<PathBuf> {
     let dir = dir()?;
-    DirBuilder::new().recursive(true).mode(0o700).create(&dir)?;
+    private::create_dir(&dir)?;
     Ok(dir)
 }
 
@@ -198,11 +198,7 @@ pub fn import(name: &str, source: &Path) -> Result<()> {
 }
 
 fn write_private(dest: &Path, bytes: &[u8]) -> Result<()> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(dest)?;
+    let mut file = private::create_file(dest, true)?;
     file.write_all(bytes)?;
     if !bytes.ends_with(b"\n") {
         file.write_all(b"\n")?;

@@ -1,6 +1,7 @@
 mod app;
 mod i18n;
 mod keys;
+mod private;
 mod ssh;
 mod store;
 mod ui;
