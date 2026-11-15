@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#FFC400"/>
+  <ellipse cx="256" cy="282" rx="168" ry="176" fill="#16181D"/>
+  <g fill="#FFFFFF">
+    <circle cx="198" cy="250" r="76"/>
+    <circle cx="314" cy="250" r="76"/>
+    <ellipse cx="256" cy="330" rx="122" ry="96"/>
+  </g>
+  <g fill="#16181D">
+    <circle cx="204" cy="246" r="25"/>
+    <circle cx="308" cy="246" r="25"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="212" cy="238" r="8"/>
+    <circle cx="316" cy="238" r="8"/>
+  </g>
+  <path d="M212 300 Q256 284 300 300 Q284 344 256 352 Q228 344 212 300 Z" fill="#FFC400" stroke="#16181D" stroke-width="8" stroke-linejoin="round"/>
+  <g fill="none" stroke="#16181D" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="214,378 238,394 214,410"/>
+    <line x1="254" y1="410" x2="296" y2="410"/>
+  </g>
+</svg>

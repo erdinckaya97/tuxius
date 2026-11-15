@@ -1,0 +1,26 @@
+[package]
+name = "tuxius"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Save your SSH servers once, connect with one keystroke. A tiny, modern SSH manager for the terminal."
+license = "MIT"
+repository = "https://github.com/erdinckaya97/tuxius"
+homepage = "https://erdinckaya97.github.io/tuxius"
+readme = "README.md"
+keywords = ["ssh", "terminal", "cli", "server", "tui"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+dirs = "7.0.0"
+inquire = "0.9.4"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.2.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

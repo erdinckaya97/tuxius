@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tuxius — SSH, without the typing</title>
+  <meta name="description" content="Save your SSH servers once. Type tuxius, pick one, you're in. A tiny, modern SSH manager for the terminal.">
+  <meta property="og:title" content="Tuxius — SSH, without the typing">
+  <meta property="og:description" content="A tiny, modern SSH manager for the terminal. Free and open source (MIT).">
+  <meta property="og:image" content="https://erdinckaya97.github.io/tuxius/banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #16181d; --panel: #1e2026; --line: #2a2d35; --text: #e6e6e6; --muted: #9aa0ac;
+      --accent: #ffc400; --green: #4ade80;
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    nav .links { display: flex; gap: 22px; font-size: 15px; }
+    nav .links a { color: var(--muted); }
+    nav .links a:hover { color: var(--text); text-decoration: none; }
+
+    .hero { display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; align-items: center; padding: 64px 0 80px; }
+    h1 { font-size: clamp(40px, 6vw, 64px); line-height: 1.05; letter-spacing: -.03em; }
+    h1 .grad { color: var(--accent); }
+    .lead { color: var(--muted); font-size: 19px; margin: 20px 0 32px; max-width: 30ch; }
+
+    .install { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 14px 14px 14px 18px; font: 14px var(--mono); max-width: 100%; }
+    .install code { overflow-x: auto; white-space: nowrap; flex: 1; scrollbar-width: none; }
+    .install code::-webkit-scrollbar { display: none; }
+    .install .p { color: var(--accent); user-select: none; }
+    button.copy { background: #2a2d35; color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+      padding: 6px 12px; font: 13px var(--mono); cursor: pointer; transition: .15s; }
+    button.copy:hover { border-color: var(--accent); }
+    .cta { display: flex; gap: 14px; margin-top: 20px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+    .btn.primary { background: var(--accent); color: #16181d; }
+    .btn.ghost { border: 1px solid var(--line); color: var(--text); }
+    .btn:hover { text-decoration: none; filter: brightness(1.1); }
+
+    .term { background: #0e0f12; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+    .term .bar { display: flex; gap: 8px; padding: 13px 16px; background: #1e2026; border-bottom: 1px solid var(--line); }
+    .term .bar i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+    .term .bar i:nth-child(2) { background: #febc2e; } .term .bar i:nth-child(3) { background: #28c840; }
+    .term pre { font: 14px/1.65 var(--mono); padding: 20px 22px; min-height: 330px; white-space: pre; overflow-x: auto; }
+    .hero > * { min-width: 0; }
+    .w { color: #fff; } .b { font-weight: 700; }
+    .c { color: var(--accent); } .g { color: var(--green); } .m { color: var(--muted); }
+    .cursor { display: inline-block; width: 8px; height: 1.1em; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    section { padding: 64px 0; border-top: 1px solid var(--line); }
+    h2 { font-size: 30px; letter-spacing: -.02em; margin-bottom: 8px; }
+    .sub { color: var(--muted); margin-bottom: 36px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+    .card .ico { font: 600 18px var(--mono); color: var(--accent); margin-bottom: 10px; }
+    .card h3 { font-size: 17px; margin-bottom: 6px; }
+    .card p { color: var(--muted); font-size: 15px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+    .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+    .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 30px; height: 30px;
+      border-radius: 50%; background: var(--accent); color: #16181d; font-weight: 800; margin-bottom: 12px; }
+    .step code, .cmds code { font: 14px var(--mono); color: var(--accent); }
+    .step p { color: var(--muted); font-size: 15px; margin-top: 6px; }
+    table.cmds { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .cmds td { padding: 13px 18px; border-bottom: 1px solid var(--line); }
+    .cmds tr:last-child td { border-bottom: 0; }
+    .cmds td:last-child { color: var(--muted); }
+    footer { padding: 40px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line);
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; padding-top: 32px; }
+      .grid, .steps { grid-template-columns: 1fr; }
+      nav .links a.hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#"><img src="logo.png" alt="">Tuxius</a>
+      <div class="links">
+        <a class="hide-sm" href="#features">Features</a>
+        <a class="hide-sm" href="#usage">Usage</a>
+        <a href="https://github.com/erdinckaya97/tuxius">GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1>SSH,<br><span class="grad">without the typing.</span></h1>
+        <p class="lead">Save your servers once. Type <b>tuxius</b>, pick one, you're in. No accounts, no cloud — just your terminal.</p>
+        <div class="install">
+          <span class="p">$</span>
+          <code id="cmd">curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh | sh</code>
+          <button class="copy" onclick="copyCmd(this)">copy</button>
+        </div>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/erdinckaya97/tuxius">★ Star on GitHub</a>
+          <a class="btn ghost" href="https://github.com/erdinckaya97/tuxius/releases/latest">Download</a>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i></div>
+<pre id="screen"></pre>
+      </div>
+    </header>
+
+    <section id="features">
+      <h2>Everything you need. Nothing you don't.</h2>
+      <p class="sub">A single small binary that drives the OpenSSH client already on your machine.</p>
+      <div class="grid">
+        <div class="card"><div class="ico">❯_</div><h3>One command</h3><p>Type <code>tuxius</code> and get a searchable list of your servers. Arrow keys, Enter, done.</p></div>
+        <div class="card"><div class="ico">⚿</div><h3>Password once, then never</h3><p>Tuxius uses your root password once to install an SSH key. The password is never stored.</p></div>
+        <div class="card"><div class="ico">⌕</div><h3>Fuzzy search</h3><p>Start typing a name or an IP to filter. Most recently used servers float to the top.</p></div>
+        <div class="card"><div class="ico">→</div><h3>Direct connect</h3><p><code>tuxius web</code> jumps straight in. Unique prefixes work too.</p></div>
+        <div class="card"><div class="ico">$</div><h3>Remote commands</h3><p><code>tuxius web -- df -h</code> runs a command without opening a shell.</p></div>
+        <div class="card"><div class="ico">⚿</div><h3>Bring your own keys</h3><p>Import the SSH keys you already use or generate new ones. Removing a server can also revoke its key.</p></div>
+      </div>
+    </section>
+
+    <section id="usage">
+      <h2>Up and running in a minute</h2>
+      <p class="sub">Works on Linux and macOS, Intel and ARM.</p>
+      <div class="steps">
+        <div class="step"><code>curl … | sh</code><p>Install with the one-liner above, or <code>cargo install --git</code>.</p></div>
+        <div class="step"><code>tuxius add</code><p>Name it, enter the host and root password. Tuxius sets up a key for you.</p></div>
+        <div class="step"><code>tuxius</code><p>Pick a server from the list. That's it — you're connected.</p></div>
+      </div>
+      <br><br>
+      <table class="cmds">
+        <tr><td><code>tuxius</code></td><td>Open the server picker</td></tr>
+        <tr><td><code>tuxius &lt;name&gt;</code></td><td>Connect directly</td></tr>
+        <tr><td><code>tuxius &lt;name&gt; -- &lt;cmd&gt;</code></td><td>Run a command on the server</td></tr>
+        <tr><td><code>tuxius add</code></td><td>Save a new server</td></tr>
+        <tr><td><code>tuxius list</code></td><td>List saved servers</td></tr>
+        <tr><td><code>tuxius edit</code> / <code>tuxius rm</code></td><td>Change or remove a server</td></tr>
+        <tr><td><code>tuxius key</code></td><td>Import, generate, show or delete SSH keys</td></tr>
+      </table>
+    </section>
+
+    <footer>
+      <span>Tuxius · MIT License</span>
+      <span><a href="https://github.com/erdinckaya97/tuxius">GitHub</a> · <a href="https://github.com/erdinckaya97/tuxius/blob/main/README.tr.md">Türkçe</a></span>
+    </footer>
+  </div>
+
+  <script>
+    function copyCmd(btn) {
+      navigator.clipboard.writeText(document.getElementById('cmd').textContent).then(() => {
+        btn.textContent = 'copied';
+        setTimeout(() => (btn.textContent = 'copy'), 1500);
+      });
+    }
+
+    const frames = [
+      '<span class="m">~</span> <span class="c">❯</span> tuxius\n\n' +
+      '  <span class="c b">▀█▀ █ █ ▀▄▀ █ █ █ █▀</span>\n' +
+      '  <span class="c b"> █  █▄█ █ █ █ █▄█ ▄█</span>\n' +
+      '  <span class="m">ssh, without the typing</span>\n\n' +
+      '<span class="c">›</span> Connect to\n',
+    ];
+    const rows = [
+      ['web-prod', 'root@203.0.113.10', 'key'],
+      ['db-main', 'root@203.0.113.24', 'key'],
+      ['staging', 'deploy@staging.acme.dev', 'password'],
+    ];
+    const extra = ['+ Add a new server', '✎ Edit a server', '⏻ Quit'];
+    const screen = document.getElementById('screen');
+    let sel = 0, phase = 0;
+
+    function menu() {
+      let out = frames[0];
+      rows.forEach((r, i) => {
+        const line = r[0].padEnd(10) + r[1].padEnd(25) + r[2];
+        out += i === sel ? `<span class="c">❯ <span class="b c">${line}</span></span>\n` : `  ${line}\n`;
+      });
+      extra.forEach(e => (out += `  <span class="m">${e}</span>\n`));
+      out += '<span class="m">  ↑↓ move · type to filter · enter select</span>';
+      return out;
+    }
+
+    function tick() {
+      if (phase < 3) { sel = phase; screen.innerHTML = menu(); phase++; setTimeout(tick, 900); return; }
+      if (phase === 3) { sel = 1; screen.innerHTML = menu(); phase++; setTimeout(tick, 900); return; }
+      if (phase === 4) {
+        screen.innerHTML = '<span class="m">~</span> <span class="c">❯</span> tuxius\n\n  <span class="c">→</span> <span class="b w">db-main</span> <span class="m">root@203.0.113.24</span>\n\n' +
+          'Welcome to Ubuntu 24.04 LTS\n\n<span class="g">root@db-main</span>:<span class="c">~</span># <span class="cursor"></span>';
+        phase = 0; setTimeout(tick, 3200); return;
+      }
+    }
+    tick();
+  </script>
+</body>
+</html>

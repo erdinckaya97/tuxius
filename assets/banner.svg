@@ -1,0 +1,46 @@
+<svg xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 640" width="1280" height="640">
+  <rect width="1280" height="640" fill="#16181D"/>
+
+  <g transform="translate(96 214) scale(0.4)">
+    <rect width="512" height="512" rx="112" fill="#FFC400"/>
+    <ellipse cx="256" cy="282" rx="168" ry="176" fill="#16181D"/>
+    <g fill="#FFFFFF">
+      <circle cx="198" cy="250" r="76"/>
+      <circle cx="314" cy="250" r="76"/>
+      <ellipse cx="256" cy="330" rx="122" ry="96"/>
+    </g>
+    <g fill="#16181D">
+      <circle cx="204" cy="246" r="25"/>
+      <circle cx="308" cy="246" r="25"/>
+    </g>
+    <g fill="#FFFFFF">
+      <circle cx="212" cy="238" r="8"/>
+      <circle cx="316" cy="238" r="8"/>
+    </g>
+    <path d="M212 300 Q256 284 300 300 Q284 344 256 352 Q228 344 212 300 Z" fill="#FFC400" stroke="#16181D" stroke-width="8" stroke-linejoin="round"/>
+    <g fill="none" stroke="#16181D" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="214,378 238,394 214,410"/>
+      <line x1="254" y1="410" x2="296" y2="410"/>
+    </g>
+  </g>
+
+  <text x="330" y="318" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="#FFFFFF" letter-spacing="-3">Tuxius</text>
+  <text x="334" y="372" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="30" fill="#9AA0AC">SSH, without the typing.</text>
+
+  <g transform="translate(730 160)">
+    <rect width="460" height="320" rx="14" fill="#0E0F12" stroke="#2A2D35" stroke-width="2"/>
+    <rect width="460" height="44" rx="14" fill="#1E2026"/>
+    <rect y="30" width="460" height="14" fill="#1E2026"/>
+    <circle cx="26" cy="22" r="7" fill="#FF5F57"/>
+    <circle cx="50" cy="22" r="7" fill="#FEBC2E"/>
+    <circle cx="74" cy="22" r="7" fill="#28C840"/>
+    <g font-family="Menlo, 'SF Mono', Consolas, monospace" font-size="21">
+      <text x="28" y="96" fill="#FFC400">&#8250;</text>
+      <text x="54" y="96" fill="#E6E6E6">Connect to</text>
+      <text x="28" y="142" fill="#FFC400" font-weight="700">&gt; web-prod   203.0.113.10</text>
+      <text x="28" y="182" fill="#C8CBD2">  db-main    203.0.113.24</text>
+      <text x="28" y="222" fill="#C8CBD2">  staging    acme.dev:2222</text>
+      <text x="28" y="270" fill="#6B7180">  + Add a new server</text>
+    </g>
+  </g>
+</svg>
