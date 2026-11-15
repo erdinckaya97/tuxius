@@ -1,3 +1,4 @@
+use crate::i18n::{fill, t};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, DirBuilder, OpenOptions};
@@ -58,9 +59,9 @@ impl Server {
 
     pub fn auth_label(&self) -> String {
         match (self.auth, self.key.as_deref()) {
-            (Auth::Password, _) => "password".into(),
-            (Auth::Key, None) => "key".into(),
-            (Auth::Key, Some(k)) => format!("key: {k}"),
+            (Auth::Password, _) => t().auth_password.into(),
+            (Auth::Key, None) => t().auth_key.into(),
+            (Auth::Key, Some(k)) => format!("{}: {k}", t().auth_key),
         }
     }
 
@@ -74,6 +75,9 @@ impl Server {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Store {
+    /// Interface language chosen with `tuxius lang`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lang: Option<String>,
     #[serde(default, rename = "server")]
     pub servers: Vec<Server>,
     #[serde(skip)]
@@ -146,13 +150,13 @@ impl Store {
             .collect();
         match hits.as_slice() {
             [i] => Ok(*i),
-            [] => bail!("no saved server named '{query}' (see `tuxius list`)"),
+            [] => bail!(fill(t().no_server_named, &[query])),
             _ => {
                 let names: Vec<&str> = hits
                     .iter()
                     .map(|&i| self.servers[i].name.as_str())
                     .collect();
-                bail!("'{query}' matches several servers: {}", names.join(", "))
+                bail!(fill(t().ambiguous, &[query, &names.join(", ")]))
             }
         }
     }
@@ -244,6 +248,7 @@ mod tests {
     #[test]
     fn finds_by_name_and_prefix() {
         let store = Store {
+            lang: None,
             servers: vec![
                 server("web-prod", None),
                 server("web-dev", None),
@@ -260,6 +265,7 @@ mod tests {
     #[test]
     fn orders_by_recent_use() {
         let store = Store {
+            lang: None,
             servers: vec![
                 server("b", None),
                 server("a", Some(5)),
@@ -276,6 +282,7 @@ mod tests {
         s.auth = Auth::Password;
         s.password = Some("secret".into());
         let store = Store {
+            lang: None,
             servers: vec![s.clone()],
             path: PathBuf::new(),
         };

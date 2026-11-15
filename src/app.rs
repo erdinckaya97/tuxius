@@ -1,3 +1,4 @@
+use crate::i18n::{self, fill, t};
 use crate::keys;
 use crate::ssh;
 use crate::store::{Auth, Server, Store, parse_destination};
@@ -43,11 +44,11 @@ fn interactive() -> bool {
 fn valid_name(store: &Store, name: &str, except: Option<usize>) -> Result<(), String> {
     let name = name.trim();
     if name.is_empty() {
-        Err("Name can't be empty".into())
+        Err(t().name_empty.into())
     } else if name.chars().any(char::is_whitespace) {
-        Err("Use a name without spaces, e.g. web-prod".into())
+        Err(t().name_spaces.into())
     } else if store.name_taken(name, except) {
-        Err(format!("'{name}' is already saved"))
+        Err(fill(t().name_taken, &[name]))
     } else {
         Ok(())
     }
@@ -61,17 +62,17 @@ fn prompt_name(store: &Store, initial: Option<&str>, except: Option<usize>) -> R
         .filter(|(i, _)| Some(*i) != except)
         .map(|(_, s)| s.name.to_lowercase())
         .collect();
-    let mut prompt = Text::new("Name")
-        .with_placeholder("e.g. web-prod")
-        .with_help_message("Short nickname you'll pick from the list")
+    let mut prompt = Text::new(t().p_name)
+        .with_placeholder(t().ph_name)
+        .with_help_message(t().help_name)
         .with_validator(move |input: &str| {
             let name = input.trim();
             Ok(if name.is_empty() {
-                Validation::Invalid("Name can't be empty".into())
+                Validation::Invalid(t().name_empty.into())
             } else if name.chars().any(char::is_whitespace) {
-                Validation::Invalid("Use a name without spaces, e.g. web-prod".into())
+                Validation::Invalid(t().name_spaces.into())
             } else if taken.contains(&name.to_lowercase()) {
-                Validation::Invalid(format!("'{name}' is already saved").into())
+                Validation::Invalid(fill(t().name_taken, &[name]).into())
             } else {
                 Validation::Valid
             })
@@ -83,12 +84,12 @@ fn prompt_name(store: &Store, initial: Option<&str>, except: Option<usize>) -> R
 }
 
 fn prompt_host(initial: Option<&str>) -> Result<String> {
-    let mut prompt = Text::new("Host")
-        .with_placeholder("IP or domain, e.g. 203.0.113.10")
-        .with_help_message("Tip: root@1.2.3.4:2222 also works")
+    let mut prompt = Text::new(t().p_host)
+        .with_placeholder(t().ph_host)
+        .with_help_message(t().help_host)
         .with_validator(|input: &str| {
             Ok(if input.trim().is_empty() {
-                Validation::Invalid("Host can't be empty".into())
+                Validation::Invalid(t().host_empty.into())
             } else {
                 Validation::Valid
             })
@@ -100,7 +101,7 @@ fn prompt_host(initial: Option<&str>) -> Result<String> {
 }
 
 fn prompt_user(default: &str) -> Result<String> {
-    let user = Text::new("User").with_default(default).prompt()?;
+    let user = Text::new(t().p_user).with_default(default).prompt()?;
     Ok(if user.trim().is_empty() {
         default.to_string()
     } else {
@@ -109,14 +110,14 @@ fn prompt_user(default: &str) -> Result<String> {
 }
 
 fn prompt_port(default: u16) -> Result<u16> {
-    Ok(CustomType::<u16>::new("Port")
+    Ok(CustomType::<u16>::new(t().p_port)
         .with_default(default)
-        .with_error_message("Enter a port number between 1 and 65535")
+        .with_error_message(t().port_error)
         .prompt()?)
 }
 
 fn prompt_password(help: &str) -> Result<String> {
-    Ok(Password::new("Password")
+    Ok(Password::new(t().p_password)
         .without_confirmation()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_display_toggle_enabled()
@@ -125,15 +126,13 @@ fn prompt_password(help: &str) -> Result<String> {
 }
 
 fn prompt_method() -> Result<Method> {
-    const INSTALL: &str = "New Tuxius key (recommended)";
-    const EXISTING: &str = "My own SSH key";
-    const PASS: &str = "Saved password";
-    let pick = Select::new("Log in with", vec![INSTALL, EXISTING, PASS])
-        .with_help_message("new key: password is used once, never stored · saved password: kept in config (chmod 600)")
-        .prompt()?;
-    Ok(match pick {
-        INSTALL => Method::Install,
-        EXISTING => Method::Existing(choose_key()?),
+    let s = t();
+    let pick = Select::new(s.p_method, vec![s.m_install, s.m_existing, s.m_password])
+        .with_help_message(s.method_help)
+        .raw_prompt()?;
+    Ok(match pick.index {
+        0 => Method::Install,
+        1 => Method::Existing(choose_key()?),
         _ => Method::Password,
     })
 }
@@ -142,6 +141,34 @@ fn read_password_stdin() -> Result<String> {
     let mut line = String::new();
     std::io::stdin().lock().read_line(&mut line)?;
     Ok(line.trim_end_matches(['\r', '\n']).to_string())
+}
+
+/// Yes/no prompt that understands the current language's answers.
+fn confirm(message: &str, default: bool) -> Result<bool> {
+    let s = t();
+    Ok(Confirm::new(message)
+        .with_default(default)
+        .with_default_value_formatter(&|d| {
+            if d {
+                s.yes_no_default_yes
+            } else {
+                s.yes_no_default_no
+            }
+            .to_string()
+        })
+        .with_formatter(&|answer| if answer { s.yes } else { s.no }.to_string())
+        .with_parser(&|input| {
+            let input = input.trim().to_lowercase();
+            if s.yes_words.contains(&input.as_str()) {
+                Ok(true)
+            } else if s.no_words.contains(&input.as_str()) {
+                Ok(false)
+            } else {
+                Err(())
+            }
+        })
+        .with_error_message(s.yes_no_error)
+        .prompt()?)
 }
 
 fn use_key(server: &mut Server, key: &str) {
@@ -153,22 +180,18 @@ fn use_key(server: &mut Server, key: &str) {
 /// Installs `key` with the password, or falls back to saving the password
 /// if that fails and the user agrees.
 fn install_or_fallback(server: &mut Server, password: &str, key: &str) -> Result<()> {
-    ui::step(&format!("Installing SSH key on {}…", server.address()));
+    ui::step(&fill(t().installing, &[&server.address()]));
     match ssh::install_key(server, password, key) {
         Ok(()) => {
             use_key(server, key);
-            ui::ok("Key installed — no password needed from now on");
+            ui::ok(t().key_installed);
             Ok(())
         }
         Err(e) => {
-            ui::error(&format!("Could not install key: {e:#}"));
-            let fallback = interactive()
-                && !password.is_empty()
-                && Confirm::new("Save it with the password instead?")
-                    .with_default(false)
-                    .prompt()?;
+            ui::error(&fill(t().install_failed, &[&format!("{e:#}")]));
+            let fallback = interactive() && !password.is_empty() && confirm(t().fallback_q, false)?;
             if !fallback {
-                bail!("server not saved");
+                bail!(t().not_saved);
             }
             server.auth = Auth::Password;
             server.key = None;
@@ -179,35 +202,31 @@ fn install_or_fallback(server: &mut Server, password: &str, key: &str) -> Result
 }
 
 fn setup_login(server: &mut Server, method: Method, password: Option<String>) -> Result<()> {
-    const ONCE: &str = "Used to log in once — esc to cancel";
+    let once = t().pw_once;
     match method {
         Method::Install => {
             let password = match password {
                 Some(p) => p,
-                None => prompt_password(ONCE)?,
+                None => prompt_password(once)?,
             };
             install_or_fallback(server, &password, keys::DEFAULT)
         }
         Method::Existing(key) => {
-            ui::step(&format!("Checking key '{key}' on {}…", server.address()));
+            ui::step(&fill(t().checking_key, &[&key, &server.address()]));
             match ssh::verify_key(server, &key) {
                 Ok(()) => {
                     use_key(server, &key);
-                    ui::ok("Key login works");
+                    ui::ok(t().key_works);
                     Ok(())
                 }
                 Err(e) => {
-                    ui::warn(&format!("The server doesn't accept this key yet ({e:#})"));
+                    ui::warn(&fill(t().key_not_accepted, &[&format!("{e:#}")]));
                     let password = match password {
                         Some(p) => p,
-                        None if interactive()
-                            && Confirm::new("Install it on the server using the password?")
-                                .with_default(true)
-                                .prompt()? =>
-                        {
-                            prompt_password(ONCE)?
+                        None if interactive() && confirm(t().install_q, true)? => {
+                            prompt_password(once)?
                         }
-                        None => bail!("server not saved"),
+                        None => bail!(t().not_saved),
                     };
                     install_or_fallback(server, &password, &key)
                 }
@@ -216,18 +235,17 @@ fn setup_login(server: &mut Server, method: Method, password: Option<String>) ->
         Method::Password => {
             let password = match password {
                 Some(p) => p,
-                None => prompt_password("Saved in your config file (chmod 600)")?,
+                None => prompt_password(t().pw_saved)?,
             };
-            ui::step(&format!("Checking login to {}…", server.address()));
+            ui::step(&fill(t().checking_login, &[&server.address()]));
             if let Err(e) = ssh::check_password(server, &password) {
-                ui::warn(&format!("Login check failed: {e:#}"));
-                let keep =
-                    interactive() && Confirm::new("Save anyway?").with_default(false).prompt()?;
+                ui::warn(&fill(t().login_failed, &[&format!("{e:#}")]));
+                let keep = interactive() && confirm(t().save_anyway, false)?;
                 if !keep {
-                    bail!("server not saved");
+                    bail!(t().not_saved);
                 }
             } else {
-                ui::ok("Login works");
+                ui::ok(t().login_works);
             }
             server.auth = Auth::Password;
             server.key = None;
@@ -269,7 +287,7 @@ pub fn add(store: &mut Store, opts: AddOptions) -> Result<()> {
     let method = match (opts.key, opts.auth) {
         (Some(key), _) => {
             if !keys::exists(&key) {
-                bail!("no key named '{key}' (see `tuxius key list`)");
+                bail!(fill(t().no_key_named, &[&key]));
             }
             Method::Existing(key)
         }
@@ -299,11 +317,13 @@ pub fn add(store: &mut Store, opts: AddOptions) -> Result<()> {
     let name = server.name.clone();
     store.servers.push(server);
     store.save()?;
-    ui::ok(&format!(
-        "Saved {} — connect with {} or {}",
-        ui::bold(&name),
-        ui::accent("tuxius"),
-        ui::accent(&format!("tuxius {name}"))
+    ui::ok(&fill(
+        t().saved,
+        &[
+            &ui::bold(&name),
+            &ui::accent("tuxius"),
+            &ui::accent(&format!("tuxius {name}")),
+        ],
     ));
     Ok(())
 }
@@ -313,7 +333,7 @@ fn pick(store: &Store, message: &str) -> Result<usize> {
     let choice = Select::new(message, items)
         .with_formatter(&short_answer)
         .with_page_size(12)
-        .with_help_message("↑↓ move · type to filter · enter select · esc back")
+        .with_help_message(t().help_pick)
         .prompt()?;
     match choice.action {
         Action::Connect(i) => Ok(i),
@@ -323,7 +343,7 @@ fn pick(store: &Store, message: &str) -> Result<usize> {
 
 fn resolve(store: &Store, name: Option<String>, message: &str) -> Result<usize> {
     if store.servers.is_empty() {
-        bail!("no servers saved yet — run `tuxius add`");
+        bail!(t().no_servers_err);
     }
     match name {
         Some(name) => store.find(&name),
@@ -332,7 +352,7 @@ fn resolve(store: &Store, name: Option<String>, message: &str) -> Result<usize> 
 }
 
 pub fn connect(store: &mut Store, name: Option<String>, remote: &[String]) -> Result<()> {
-    let idx = resolve(store, name, "Connect to")?;
+    let idx = resolve(store, name, t().connect_to)?;
     connect_index(store, idx, remote)
 }
 
@@ -352,7 +372,7 @@ fn connect_index(store: &mut Store, idx: usize, remote: &[String]) -> Result<()>
 }
 
 pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
-    let idx = resolve(store, name, "Edit which server?")?;
+    let idx = resolve(store, name, t().edit_which)?;
     let current = store.servers[idx].clone();
 
     let name = prompt_name(store, Some(&current.name), Some(idx))?;
@@ -375,10 +395,8 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
     };
     let moved =
         server.host != current.host || server.user != current.user || server.port != current.port;
-    let change_login = Confirm::new("Change login method (password / key)?")
-        .with_default(moved && current.auth == Auth::Key)
-        .with_help_message(&format!("currently: {}", current.auth_label()))
-        .prompt()?;
+    ui::step(&fill(t().currently, &[&current.auth_label()]));
+    let change_login = confirm(t().change_login, moved && current.auth == Auth::Key)?;
     if change_login {
         let method = prompt_method()?;
         setup_login(&mut server, method, None)?;
@@ -386,57 +404,57 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
 
     store.servers[idx] = server;
     store.save()?;
-    ui::ok(&format!("Updated {}", ui::bold(&store.servers[idx].name)));
+    ui::ok(&fill(t().updated, &[&ui::bold(&store.servers[idx].name)]));
     Ok(())
 }
 
 pub fn remove(store: &mut Store, name: Option<String>, yes: bool, revoke: bool) -> Result<()> {
-    let idx = resolve(store, name, "Remove which server?")?;
+    let idx = resolve(store, name, t().remove_which)?;
     let server = store.servers[idx].clone();
     if !yes {
-        let sure = Confirm::new(&format!("Remove '{}'?", server.name))
-            .with_default(false)
-            .prompt()?;
+        let sure = confirm(&fill(t().remove_q, &[&server.name]), false)?;
         if !sure {
             return Ok(());
         }
     }
     let revoke = server.auth == Auth::Key
         && (revoke
-            || (!yes
-                && interactive()
-                && Confirm::new("Also remove its key from the server (authorized_keys)?")
-                    .with_default(false)
-                    .with_help_message("You'll need the password to connect again")
-                    .prompt()?));
+            || (!yes && interactive() && {
+                ui::step(t().revoke_help);
+                confirm(t().revoke_q, false)?
+            }));
     if revoke {
-        ui::step(&format!("Removing key from {}…", server.address()));
+        ui::step(&fill(t().removing_key, &[&server.address()]));
         match ssh::revoke_key(&server) {
-            Ok(()) => ui::ok("Key removed from the server"),
-            Err(e) => ui::warn(&format!("Could not remove key from the server: {e:#}")),
+            Ok(()) => ui::ok(t().key_removed_server),
+            Err(e) => ui::warn(&fill(t().revoke_failed, &[&format!("{e:#}")])),
         }
     }
     store.servers.remove(idx);
     store.save()?;
-    ui::ok(&format!("Removed {}", ui::bold(&server.name)));
+    ui::ok(&fill(t().removed, &[&ui::bold(&server.name)]));
     Ok(())
 }
 
 pub fn list(store: &Store) {
     if store.servers.is_empty() {
-        eprintln!(
-            "  No servers saved yet. Add one with {}",
-            ui::accent("tuxius add")
-        );
+        eprintln!("  {}", fill(t().list_empty, &[&ui::accent("tuxius add")]));
         return;
     }
-    let name_w = width(store.servers.iter().map(|s| s.name.clone()), 4);
-    let addr_w = width(store.servers.iter().map(|s| s.address()), 7);
+    let s = t();
+    let name_w = width(
+        store.servers.iter().map(|s| s.name.clone()),
+        s.col_name.chars().count(),
+    );
+    let addr_w = width(
+        store.servers.iter().map(|s| s.address()),
+        s.col_address.chars().count(),
+    );
     println!(
         "  {}",
         ui::dim(&format!(
-            "{:<name_w$}  {:<addr_w$}  AUTH",
-            "NAME", "ADDRESS"
+            "{:<name_w$}  {:<addr_w$}  {}",
+            s.col_name, s.col_address, s.col_auth
         ))
     );
     for i in store.ordered() {
@@ -457,8 +475,8 @@ fn width(items: impl Iterator<Item = String>, min: usize) -> usize {
 // ---------------------------------------------------------------- keys
 
 fn prompt_key_name(initial: Option<&str>) -> Result<String> {
-    let mut prompt = Text::new("Key name")
-        .with_placeholder("e.g. work")
+    let mut prompt = Text::new(t().p_key_name)
+        .with_placeholder(t().ph_key_name)
         .with_validator(|input: &str| {
             Ok(match keys::validate_name(input.trim()) {
                 Ok(()) => Validation::Valid,
@@ -474,14 +492,14 @@ fn prompt_key_name(initial: Option<&str>) -> Result<String> {
 fn import_key(name: Option<String>, file: Option<String>) -> Result<String> {
     let file = match file {
         Some(f) => f,
-        None => Text::new("Key file")
+        None => Text::new(t().p_key_file)
             .with_placeholder("~/.ssh/id_ed25519")
-            .with_help_message("Path to the private key (not the .pub file)")
+            .with_help_message(t().help_key_file)
             .with_validator(|input: &str| {
                 Ok(if keys::expand_home(input.trim()).is_file() {
                     Validation::Valid
                 } else {
-                    Validation::Invalid("File not found".into())
+                    Validation::Invalid(t().file_not_found.into())
                 })
             })
             .prompt()?,
@@ -499,7 +517,7 @@ fn import_key(name: Option<String>, file: Option<String>) -> Result<String> {
         }
     };
     keys::import(&name, &path)?;
-    ui::ok(&format!("Imported key {}", ui::bold(&name)));
+    ui::ok(&fill(t().imported, &[&ui::bold(&name)]));
     Ok(name)
 }
 
@@ -514,11 +532,8 @@ fn generate_key(name: Option<String>) -> Result<String> {
         None => prompt_key_name(None)?,
     };
     keys::generate(&name)?;
-    ui::ok(&format!("Generated key {} (ed25519)", ui::bold(&name)));
-    eprintln!(
-        "  {}",
-        ui::dim("Public key — add it to a server or a cloud panel:")
-    );
+    ui::ok(&fill(t().generated, &[&ui::bold(&name)]));
+    eprintln!("  {}", ui::dim(t().pubkey_hint));
     println!("{}", keys::public_key(&name)?);
     Ok(name)
 }
@@ -533,9 +548,9 @@ fn key_items(store: Option<&Store>) -> Result<Vec<Item>> {
         .map(|k| {
             let used = match store.map(|s| s.servers_using_key(&k.name).len()) {
                 None => String::new(),
-                Some(0) => "   unused".to_string(),
-                Some(1) => "   1 server".to_string(),
-                Some(n) => format!("   {n} servers"),
+                Some(0) => format!("   {}", t().unused),
+                Some(1) => format!("   {}", t().one_server),
+                Some(n) => format!("   {}", fill(t().n_servers, &[&n.to_string()])),
             };
             Item {
                 label: format!(
@@ -552,11 +567,11 @@ fn key_items(store: Option<&Store>) -> Result<Vec<Item>> {
 /// Lets the user pick a stored key, or import / generate one on the spot.
 fn choose_key() -> Result<String> {
     let mut items = key_items(None)?;
-    items.push(Item::new("+ Import a key file", Action::ImportKey));
-    items.push(Item::new("+ Generate a new key", Action::GenerateKey));
-    let choice = Select::new("Which key?", items)
+    items.push(Item::new(t().import_item, Action::ImportKey));
+    items.push(Item::new(t().generate_item, Action::GenerateKey));
+    let choice = Select::new(t().which_key, items)
         .with_formatter(&short_answer)
-        .with_help_message("↑↓ move · enter select · esc cancel")
+        .with_help_message(t().help_cancel)
         .prompt()?;
     match choice.action {
         Action::Key(name) => Ok(name),
@@ -572,7 +587,7 @@ fn resolve_key(store: &Store, name: Option<String>, message: &str) -> Result<Str
     }
     let items = key_items(Some(store))?;
     if items.is_empty() {
-        bail!("no keys yet — add one with `tuxius key add`");
+        bail!(t().no_keys_err);
     }
     let choice = Select::new(message, items)
         .with_formatter(&short_answer)
@@ -587,19 +602,29 @@ pub fn key_list(store: &Store) -> Result<()> {
     let list = keys::list()?;
     if list.is_empty() {
         eprintln!(
-            "  No keys yet. Import or generate one with {}",
-            ui::accent("tuxius key add")
+            "  {}",
+            fill(t().keys_empty, &[&ui::accent("tuxius key add")])
         );
         return Ok(());
     }
-    let name_w = width(list.iter().map(|k| k.name.clone()), 4);
-    let kind_w = width(list.iter().map(|k| k.kind.clone()), 4);
-    let fp_w = width(list.iter().map(|k| k.fingerprint.clone()), 11);
+    let s = t();
+    let name_w = width(
+        list.iter().map(|k| k.name.clone()),
+        s.col_name.chars().count(),
+    );
+    let kind_w = width(
+        list.iter().map(|k| k.kind.clone()),
+        s.col_type.chars().count(),
+    );
+    let fp_w = width(
+        list.iter().map(|k| k.fingerprint.clone()),
+        s.col_fingerprint.chars().count(),
+    );
     println!(
         "  {}",
         ui::dim(&format!(
-            "{:<name_w$}  {:<kind_w$}  {:<fp_w$}  USED BY",
-            "NAME", "TYPE", "FINGERPRINT"
+            "{:<name_w$}  {:<kind_w$}  {:<fp_w$}  {}",
+            s.col_name, s.col_type, s.col_fingerprint, s.col_used_by
         ))
     );
     for k in list {
@@ -625,10 +650,12 @@ pub fn key_add(name: Option<String>, file: Option<String>, generate: bool) -> Re
     } else if file.is_some() {
         import_key(name, file)?;
     } else {
-        const IMPORT: &str = "Import a key file";
-        const NEW: &str = "Generate a new key";
-        match Select::new("Add a key", vec![IMPORT, NEW]).prompt()? {
-            IMPORT => import_key(name, None)?,
+        let s = t();
+        match Select::new(s.add_key, vec![s.import_opt, s.generate_opt])
+            .raw_prompt()?
+            .index
+        {
+            0 => import_key(name, None)?,
             _ => generate_key(name)?,
         };
     }
@@ -636,43 +663,38 @@ pub fn key_add(name: Option<String>, file: Option<String>, generate: bool) -> Re
 }
 
 pub fn key_show(store: &Store, name: Option<String>) -> Result<()> {
-    let name = resolve_key(store, name, "Show which key?")?;
+    let name = resolve_key(store, name, t().show_which)?;
     println!("{}", keys::public_key(&name)?);
     Ok(())
 }
 
 pub fn key_remove(store: &Store, name: Option<String>, yes: bool) -> Result<()> {
-    let name = resolve_key(store, name, "Remove which key?")?;
+    let name = resolve_key(store, name, t().remove_key_which)?;
     let used = store.servers_using_key(&name);
     if !used.is_empty() {
-        bail!(
-            "key '{name}' is used by {} — remove those servers or switch them to another login first",
-            used.join(", ")
-        );
+        bail!(fill(t().key_in_use, &[&name, &used.join(", ")]));
     }
     if !yes {
-        let sure = Confirm::new(&format!("Delete key '{name}'? This can't be undone"))
-            .with_default(false)
-            .prompt()?;
+        let sure = confirm(&fill(t().delete_key_q, &[&name]), false)?;
         if !sure {
             return Ok(());
         }
     }
     keys::remove(&name)?;
-    ui::ok(&format!("Deleted key {}", ui::bold(&name)));
+    ui::ok(&fill(t().deleted_key, &[&ui::bold(&name)]));
     Ok(())
 }
 
 pub fn keys_menu(store: &Store) -> Result<()> {
     loop {
         let mut items = key_items(Some(store))?;
-        items.push(Item::new("+ Import a key file", Action::ImportKey));
-        items.push(Item::new("+ Generate a new key", Action::GenerateKey));
-        items.push(Item::new("← Back", Action::Back));
-        let choice = Select::new("SSH keys", items)
+        items.push(Item::new(t().import_item, Action::ImportKey));
+        items.push(Item::new(t().generate_item, Action::GenerateKey));
+        items.push(Item::new(t().back, Action::Back));
+        let choice = Select::new(t().keys_title, items)
             .with_formatter(&short_answer)
             .with_page_size(14)
-            .with_help_message("↑↓ move · enter select · esc back")
+            .with_help_message(t().help_back)
             .prompt()?;
         let result = match choice.action {
             Action::Key(name) => key_actions(store, name),
@@ -690,12 +712,14 @@ pub fn keys_menu(store: &Store) -> Result<()> {
 }
 
 fn key_actions(store: &Store, name: String) -> Result<()> {
-    const SHOW: &str = "Show public key";
-    const DELETE: &str = "Delete key";
-    const BACK: &str = "← Back";
-    match Select::new(&format!("Key '{name}'"), vec![SHOW, DELETE, BACK]).prompt()? {
-        SHOW => key_show(store, Some(name)),
-        DELETE => key_remove(store, Some(name), false),
+    let s = t();
+    let title = fill(s.key_title, &[&name]);
+    match Select::new(&title, vec![s.show_pub, s.delete_key, s.back])
+        .raw_prompt()?
+        .index
+    {
+        0 => key_show(store, Some(name)),
+        1 => key_remove(store, Some(name), false),
         _ => Ok(()),
     }
 }
@@ -708,6 +732,7 @@ enum Action {
     Edit,
     Remove,
     Keys,
+    Language,
     Quit,
     Key(String),
     ImportKey,
@@ -771,7 +796,7 @@ pub fn menu(store: &mut Store) -> Result<()> {
     ui::banner();
     loop {
         if store.servers.is_empty() {
-            eprintln!("  No servers saved yet — let's add your first one.\n");
+            eprintln!("  {}\n", t().first_server);
             match add(store, AddOptions::default()) {
                 Ok(()) => {
                     eprintln!();
@@ -783,16 +808,18 @@ pub fn menu(store: &mut Store) -> Result<()> {
         }
 
         let mut items = server_items(store);
-        items.push(Item::new("+ Add a new server", Action::Add));
-        items.push(Item::new("✎ Edit a server", Action::Edit));
-        items.push(Item::new("✕ Remove a server", Action::Remove));
-        items.push(Item::new("⚿ SSH keys", Action::Keys));
-        items.push(Item::new("⏻ Quit", Action::Quit));
+        let s = t();
+        items.push(Item::new(s.menu_add, Action::Add));
+        items.push(Item::new(s.menu_edit, Action::Edit));
+        items.push(Item::new(s.menu_remove, Action::Remove));
+        items.push(Item::new(s.menu_keys, Action::Keys));
+        items.push(Item::new(s.menu_lang, Action::Language));
+        items.push(Item::new(s.menu_quit, Action::Quit));
 
-        let choice = match Select::new("Connect to", items)
+        let choice = match Select::new(s.connect_to, items)
             .with_formatter(&short_answer)
-            .with_page_size(15)
-            .with_help_message("↑↓ move · type to filter · enter select · esc quit")
+            .with_page_size(16)
+            .with_help_message(s.help_menu)
             .prompt()
         {
             Ok(choice) => choice,
@@ -808,6 +835,7 @@ pub fn menu(store: &mut Store) -> Result<()> {
             Action::Edit => edit(store, None),
             Action::Remove => remove(store, None, false, false),
             Action::Keys => keys_menu(store),
+            Action::Language => language(store, None),
             _ => return Ok(()),
         };
         match result {
@@ -817,4 +845,36 @@ pub fn menu(store: &mut Store) -> Result<()> {
         }
         eprintln!();
     }
+}
+
+/// Sets and saves the interface language; prompts when `code` is `None`.
+pub fn language(store: &mut Store, code: Option<String>) -> Result<()> {
+    let lang = match code {
+        Some(code) => match i18n::Lang::parse(&code) {
+            Some(lang) => lang,
+            None => bail!(
+                "unknown language '{code}' (available: {})",
+                i18n::ALL.map(|l| l.code()).join(", ")
+            ),
+        },
+        None => {
+            let names: Vec<String> = i18n::ALL
+                .iter()
+                .map(|l| format!("{}  ({})", l.native_name(), l.code()))
+                .collect();
+            let start = i18n::ALL
+                .iter()
+                .position(|l| *l == i18n::current())
+                .unwrap_or(0);
+            let pick = Select::new(t().p_lang, names)
+                .with_starting_cursor(start)
+                .raw_prompt()?;
+            i18n::ALL[pick.index]
+        }
+    };
+    i18n::set(lang);
+    store.lang = Some(lang.code().to_string());
+    store.save()?;
+    ui::ok(&fill(t().lang_set, &[lang.native_name()]));
+    Ok(())
 }

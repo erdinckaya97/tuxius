@@ -1,4 +1,5 @@
 mod app;
+mod i18n;
 mod keys;
 mod ssh;
 mod store;
@@ -84,6 +85,9 @@ enum Command {
         #[command(subcommand)]
         action: Option<KeyCommand>,
     },
+    /// Set the interface language: en, tr, ru (asks when omitted)
+    #[command(alias = "language")]
+    Lang { code: Option<String> },
     /// Show where Tuxius keeps its files
     Path,
 }
@@ -129,6 +133,7 @@ enum AuthArg {
 fn run(cli: Cli) -> Result<()> {
     ui::install_theme();
     let mut store = Store::load()?;
+    i18n::set(i18n::detect(store.lang.as_deref()));
     match (cli.command, cli.server) {
         (None, None) => app::menu(&mut store),
         (None, Some(name)) => app::connect(&mut store, Some(name), &cli.remote),
@@ -174,6 +179,7 @@ fn run(cli: Cli) -> Result<()> {
                 Some(KeyCommand::Show { name }) => app::key_show(&store, name),
                 Some(KeyCommand::Remove { name, yes }) => app::key_remove(&store, name, yes),
             },
+            Command::Lang { code } => app::language(&mut store, code),
             Command::Path => {
                 println!("servers  {}", store.path().display());
                 println!("keys     {}", keys::dir()?.display());

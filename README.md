@@ -21,7 +21,8 @@
   <a href="#install">Install</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#security">Security</a> ·
-  <a href="README.tr.md">Türkçe</a>
+  <a href="README.tr.md">Türkçe</a> ·
+  <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
@@ -40,6 +41,7 @@ Tired of typing `ssh root@203.0.113.10 -p 2222` and digging for passwords? Tuxiu
 - **Your own SSH keys** — import the keys you already use, generate new ones, delete them. Removing a server can also revoke its key on the server.
 - **Zero dependencies** — a single ~1 MB Rust binary that drives your system's OpenSSH.
 - **Plain-text config** — one readable TOML file you can back up or edit.
+- **Speaks your language** — English, Türkçe and Русский, picked up from your system automatically.
 
 ## Install
 
@@ -103,6 +105,7 @@ After that, `tuxius` shows your servers, most recently used first:
   ✎ Edit a server
   ✕ Remove a server
   ⚿ SSH keys
+  ⚑ Language
   ⏻ Quit
   ↑↓ move · type to filter · enter select · esc quit
 ```
@@ -123,6 +126,7 @@ After that, `tuxius` shows your servers, most recently used first:
 | `tuxius key add` | Import a key file (`--file ~/.ssh/id_ed25519`) or generate one (`--generate`) |
 | `tuxius key show [name]` | Print a public key, e.g. to paste into a cloud panel |
 | `tuxius key rm [name]` | Delete a key (refused while a server still uses it) |
+| `tuxius lang [en\|tr\|ru]` | Change the interface language |
 | `tuxius path` | Show where files are stored |
 
 `tuxius add` also takes flags for scripting:
@@ -141,6 +145,10 @@ When you add a server, Tuxius asks how to log in:
 - **Saved password** — for servers that don't allow keys.
 
 Keys live in `~/.config/tuxius/keys/` (chmod 600). Manage them from the menu (`⚿ SSH keys`) or with `tuxius key`.
+
+### Language
+
+Tuxius speaks **English**, **Türkçe** and **Русский**. It follows your system language (`LANG`) by default. Switch with `tuxius lang ru` or from the menu (`⚑ Language`) — the choice is saved. `TUXIUS_LANG=en` overrides it for a single run.
 
 ## Security
 

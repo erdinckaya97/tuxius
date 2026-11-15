@@ -1,0 +1,659 @@
+use std::sync::atomic::{AtomicU8, Ordering};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lang {
+    En,
+    Tr,
+    Ru,
+}
+
+pub const ALL: [Lang; 3] = [Lang::En, Lang::Tr, Lang::Ru];
+
+impl Lang {
+    pub fn code(self) -> &'static str {
+        match self {
+            Lang::En => "en",
+            Lang::Tr => "tr",
+            Lang::Ru => "ru",
+        }
+    }
+
+    pub fn native_name(self) -> &'static str {
+        match self {
+            Lang::En => "English",
+            Lang::Tr => "Türkçe",
+            Lang::Ru => "Русский",
+        }
+    }
+
+    /// Accepts codes and locale strings like `tr`, `ru_RU.UTF-8` or `en-US`.
+    pub fn parse(input: &str) -> Option<Lang> {
+        let code: String = input
+            .trim()
+            .chars()
+            .take(2)
+            .collect::<String>()
+            .to_lowercase();
+        ALL.into_iter().find(|l| l.code() == code)
+    }
+}
+
+static CURRENT: AtomicU8 = AtomicU8::new(0);
+
+pub fn set(lang: Lang) {
+    CURRENT.store(lang as u8, Ordering::Relaxed);
+}
+
+pub fn current() -> Lang {
+    ALL[CURRENT.load(Ordering::Relaxed) as usize]
+}
+
+/// `TUXIUS_LANG`, then the saved choice, then the system locale, then English.
+pub fn detect(saved: Option<&str>) -> Lang {
+    if let Some(lang) = std::env::var("TUXIUS_LANG")
+        .ok()
+        .as_deref()
+        .and_then(Lang::parse)
+    {
+        return lang;
+    }
+    if let Some(lang) = saved.and_then(Lang::parse) {
+        return lang;
+    }
+    for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(value) = std::env::var(var)
+            && !value.is_empty()
+        {
+            return Lang::parse(&value).unwrap_or(Lang::En);
+        }
+    }
+    Lang::En
+}
+
+pub fn t() -> &'static Texts {
+    match current() {
+        Lang::En => &EN,
+        Lang::Tr => &TR,
+        Lang::Ru => &RU,
+    }
+}
+
+/// Replaces each `{}` in `template` with the next argument.
+pub fn fill(template: &str, args: &[&str]) -> String {
+    let mut out = String::with_capacity(template.len());
+    let mut args = args.iter();
+    let mut rest = template;
+    while let Some(pos) = rest.find("{}") {
+        out.push_str(&rest[..pos]);
+        out.push_str(args.next().copied().unwrap_or(""));
+        rest = &rest[pos + 2..];
+    }
+    out.push_str(rest);
+    out
+}
+
+pub struct Texts {
+    pub tagline: &'static str,
+    pub yes: &'static str,
+    pub no: &'static str,
+    pub yes_no_default_yes: &'static str,
+    pub yes_no_default_no: &'static str,
+    pub yes_words: &'static [&'static str],
+    pub no_words: &'static [&'static str],
+    pub yes_no_error: &'static str,
+
+    pub name_empty: &'static str,
+    pub name_spaces: &'static str,
+    pub name_taken: &'static str,
+    pub p_name: &'static str,
+    pub ph_name: &'static str,
+    pub help_name: &'static str,
+    pub p_host: &'static str,
+    pub ph_host: &'static str,
+    pub help_host: &'static str,
+    pub host_empty: &'static str,
+    pub p_user: &'static str,
+    pub p_port: &'static str,
+    pub port_error: &'static str,
+    pub p_password: &'static str,
+
+    pub p_method: &'static str,
+    pub m_install: &'static str,
+    pub m_existing: &'static str,
+    pub m_password: &'static str,
+    pub method_help: &'static str,
+    pub installing: &'static str,
+    pub key_installed: &'static str,
+    pub install_failed: &'static str,
+    pub fallback_q: &'static str,
+    pub not_saved: &'static str,
+    pub checking_key: &'static str,
+    pub key_works: &'static str,
+    pub key_not_accepted: &'static str,
+    pub install_q: &'static str,
+    pub pw_once: &'static str,
+    pub pw_saved: &'static str,
+    pub checking_login: &'static str,
+    pub login_failed: &'static str,
+    pub save_anyway: &'static str,
+    pub login_works: &'static str,
+    pub saved: &'static str,
+
+    pub no_servers_err: &'static str,
+    pub no_server_named: &'static str,
+    pub ambiguous: &'static str,
+    pub connect_to: &'static str,
+    pub edit_which: &'static str,
+    pub change_login: &'static str,
+    pub currently: &'static str,
+    pub updated: &'static str,
+    pub remove_which: &'static str,
+    pub remove_q: &'static str,
+    pub revoke_q: &'static str,
+    pub revoke_help: &'static str,
+    pub removing_key: &'static str,
+    pub key_removed_server: &'static str,
+    pub revoke_failed: &'static str,
+    pub removed: &'static str,
+    pub list_empty: &'static str,
+    pub col_name: &'static str,
+    pub col_address: &'static str,
+    pub col_auth: &'static str,
+    pub col_type: &'static str,
+    pub col_fingerprint: &'static str,
+    pub col_used_by: &'static str,
+    pub auth_password: &'static str,
+    pub auth_key: &'static str,
+
+    pub p_key_name: &'static str,
+    pub ph_key_name: &'static str,
+    pub p_key_file: &'static str,
+    pub help_key_file: &'static str,
+    pub file_not_found: &'static str,
+    pub key_chars: &'static str,
+    pub key_pub_suffix: &'static str,
+    pub key_exists: &'static str,
+    pub not_private_key: &'static str,
+    pub no_key_named: &'static str,
+    pub key_missing: &'static str,
+    pub key_login_failed: &'static str,
+    pub imported: &'static str,
+    pub generated: &'static str,
+    pub pubkey_hint: &'static str,
+    pub unused: &'static str,
+    pub one_server: &'static str,
+    pub n_servers: &'static str,
+    pub import_item: &'static str,
+    pub generate_item: &'static str,
+    pub which_key: &'static str,
+    pub no_keys_err: &'static str,
+    pub keys_empty: &'static str,
+    pub add_key: &'static str,
+    pub import_opt: &'static str,
+    pub generate_opt: &'static str,
+    pub show_which: &'static str,
+    pub remove_key_which: &'static str,
+    pub key_in_use: &'static str,
+    pub delete_key_q: &'static str,
+    pub deleted_key: &'static str,
+    pub keys_title: &'static str,
+    pub key_title: &'static str,
+    pub show_pub: &'static str,
+    pub delete_key: &'static str,
+    pub back: &'static str,
+
+    pub help_pick: &'static str,
+    pub help_cancel: &'static str,
+    pub help_back: &'static str,
+    pub help_menu: &'static str,
+    pub menu_add: &'static str,
+    pub menu_edit: &'static str,
+    pub menu_remove: &'static str,
+    pub menu_keys: &'static str,
+    pub menu_lang: &'static str,
+    pub menu_quit: &'static str,
+    pub first_server: &'static str,
+    pub p_lang: &'static str,
+    pub lang_set: &'static str,
+}
+
+pub static EN: Texts = Texts {
+    tagline: "ssh, without the typing",
+    yes: "Yes",
+    no: "No",
+    yes_no_default_yes: "Y/n",
+    yes_no_default_no: "y/N",
+    yes_words: &["y", "yes"],
+    no_words: &["n", "no"],
+    yes_no_error: "Type y or n",
+
+    name_empty: "Name can't be empty",
+    name_spaces: "Use a name without spaces, e.g. web-prod",
+    name_taken: "'{}' is already saved",
+    p_name: "Name",
+    ph_name: "e.g. web-prod",
+    help_name: "Short nickname you'll pick from the list",
+    p_host: "Host",
+    ph_host: "IP or domain, e.g. 203.0.113.10",
+    help_host: "Tip: root@1.2.3.4:2222 also works",
+    host_empty: "Host can't be empty",
+    p_user: "User",
+    p_port: "Port",
+    port_error: "Enter a port number between 1 and 65535",
+    p_password: "Password",
+
+    p_method: "Log in with",
+    m_install: "New Tuxius key (recommended)",
+    m_existing: "My own SSH key",
+    m_password: "Saved password",
+    method_help: "new key: password is used once, never stored · saved password: kept in config (chmod 600)",
+    installing: "Installing SSH key on {}…",
+    key_installed: "Key installed — no password needed from now on",
+    install_failed: "Could not install key: {}",
+    fallback_q: "Save it with the password instead?",
+    not_saved: "server not saved",
+    checking_key: "Checking key '{}' on {}…",
+    key_works: "Key login works",
+    key_not_accepted: "The server doesn't accept this key yet ({})",
+    install_q: "Install it on the server using the password?",
+    pw_once: "Used to log in once — esc to cancel",
+    pw_saved: "Saved in your config file (chmod 600)",
+    checking_login: "Checking login to {}…",
+    login_failed: "Login check failed: {}",
+    save_anyway: "Save anyway?",
+    login_works: "Login works",
+    saved: "Saved {} — connect with {} or {}",
+
+    no_servers_err: "no servers saved yet — run `tuxius add`",
+    no_server_named: "no saved server named '{}' (see `tuxius list`)",
+    ambiguous: "'{}' matches several servers: {}",
+    connect_to: "Connect to",
+    edit_which: "Edit which server?",
+    change_login: "Change login method (password / key)?",
+    currently: "currently: {}",
+    updated: "Updated {}",
+    remove_which: "Remove which server?",
+    remove_q: "Remove '{}'?",
+    revoke_q: "Also remove its key from the server (authorized_keys)?",
+    revoke_help: "You'll need the password to connect again",
+    removing_key: "Removing key from {}…",
+    key_removed_server: "Key removed from the server",
+    revoke_failed: "Could not remove key from the server: {}",
+    removed: "Removed {}",
+    list_empty: "No servers saved yet. Add one with {}",
+    col_name: "NAME",
+    col_address: "ADDRESS",
+    col_auth: "AUTH",
+    col_type: "TYPE",
+    col_fingerprint: "FINGERPRINT",
+    col_used_by: "USED BY",
+    auth_password: "password",
+    auth_key: "key",
+
+    p_key_name: "Key name",
+    ph_key_name: "e.g. work",
+    p_key_file: "Key file",
+    help_key_file: "Path to the private key (not the .pub file)",
+    file_not_found: "File not found",
+    key_chars: "Use letters, numbers, '-', '_' or '.'",
+    key_pub_suffix: "Name can't end with .pub",
+    key_exists: "A key named '{}' already exists",
+    not_private_key: "{} doesn't look like a private key (pick the file without .pub)",
+    no_key_named: "no key named '{}' (see `tuxius key list`)",
+    key_missing: "key '{}' is missing — pick another with `tuxius edit {}`",
+    key_login_failed: "key login did not work",
+    imported: "Imported key {}",
+    generated: "Generated key {} (ed25519)",
+    pubkey_hint: "Public key — add it to a server or a cloud panel:",
+    unused: "unused",
+    one_server: "1 server",
+    n_servers: "{} servers",
+    import_item: "+ Import a key file",
+    generate_item: "+ Generate a new key",
+    which_key: "Which key?",
+    no_keys_err: "no keys yet — add one with `tuxius key add`",
+    keys_empty: "No keys yet. Import or generate one with {}",
+    add_key: "Add a key",
+    import_opt: "Import a key file",
+    generate_opt: "Generate a new key",
+    show_which: "Show which key?",
+    remove_key_which: "Remove which key?",
+    key_in_use: "key '{}' is used by {} — remove those servers or switch them to another login first",
+    delete_key_q: "Delete key '{}'? This can't be undone",
+    deleted_key: "Deleted key {}",
+    keys_title: "SSH keys",
+    key_title: "Key '{}'",
+    show_pub: "Show public key",
+    delete_key: "Delete key",
+    back: "← Back",
+
+    help_pick: "↑↓ move · type to filter · enter select · esc back",
+    help_cancel: "↑↓ move · enter select · esc cancel",
+    help_back: "↑↓ move · enter select · esc back",
+    help_menu: "↑↓ move · type to filter · enter select · esc quit",
+    menu_add: "+ Add a new server",
+    menu_edit: "✎ Edit a server",
+    menu_remove: "✕ Remove a server",
+    menu_keys: "⚿ SSH keys",
+    menu_lang: "⚑ Language",
+    menu_quit: "⏻ Quit",
+    first_server: "No servers saved yet — let's add your first one.",
+    p_lang: "Language",
+    lang_set: "Language set to {}",
+};
+
+pub static TR: Texts = Texts {
+    tagline: "ssh, yazmadan",
+    yes: "Evet",
+    no: "Hayır",
+    yes_no_default_yes: "E/h",
+    yes_no_default_no: "e/H",
+    yes_words: &["e", "evet", "y", "yes"],
+    no_words: &["h", "hayır", "hayir", "n", "no"],
+    yes_no_error: "e ya da h yaz",
+
+    name_empty: "İsim boş olamaz",
+    name_spaces: "Boşluksuz bir isim kullan, ör. web-prod",
+    name_taken: "'{}' zaten kayıtlı",
+    p_name: "İsim",
+    ph_name: "ör. web-prod",
+    help_name: "Listeden seçeceğin kısa bir takma ad",
+    p_host: "Adres",
+    ph_host: "IP ya da alan adı, ör. 203.0.113.10",
+    help_host: "İpucu: root@1.2.3.4:2222 de yazabilirsin",
+    host_empty: "Adres boş olamaz",
+    p_user: "Kullanıcı",
+    p_port: "Port",
+    port_error: "1 ile 65535 arasında bir port gir",
+    p_password: "Şifre",
+
+    p_method: "Giriş yöntemi",
+    m_install: "Yeni Tuxius anahtarı (önerilen)",
+    m_existing: "Kendi SSH anahtarım",
+    m_password: "Kayıtlı şifre",
+    method_help: "yeni anahtar: şifre bir kez kullanılır, saklanmaz · kayıtlı şifre: ayar dosyasında durur (chmod 600)",
+    installing: "{} üzerine SSH anahtarı kuruluyor…",
+    key_installed: "Anahtar kuruldu — artık şifre gerekmiyor",
+    install_failed: "Anahtar kurulamadı: {}",
+    fallback_q: "Bunun yerine şifreyle kaydedilsin mi?",
+    not_saved: "sunucu kaydedilmedi",
+    checking_key: "'{}' anahtarı {} üzerinde deneniyor…",
+    key_works: "Anahtarla giriş çalışıyor",
+    key_not_accepted: "Sunucu bu anahtarı henüz kabul etmiyor ({})",
+    install_q: "Şifreyle sunucuya kurulsun mu?",
+    pw_once: "Bir kez giriş için kullanılır — iptal için esc",
+    pw_saved: "Ayar dosyana kaydedilir (chmod 600)",
+    checking_login: "{} girişi kontrol ediliyor…",
+    login_failed: "Giriş denemesi başarısız: {}",
+    save_anyway: "Yine de kaydedilsin mi?",
+    login_works: "Giriş çalışıyor",
+    saved: "{} kaydedildi — {} ya da {} ile bağlan",
+
+    no_servers_err: "henüz kayıtlı sunucu yok — `tuxius add` çalıştır",
+    no_server_named: "'{}' adında kayıtlı sunucu yok (bkz. `tuxius list`)",
+    ambiguous: "'{}' birden fazla sunucuyla eşleşiyor: {}",
+    connect_to: "Bağlan",
+    edit_which: "Hangi sunucu düzenlensin?",
+    change_login: "Giriş yöntemi (şifre / anahtar) değişsin mi?",
+    currently: "şu an: {}",
+    updated: "{} güncellendi",
+    remove_which: "Hangi sunucu silinsin?",
+    remove_q: "'{}' silinsin mi?",
+    revoke_q: "Anahtarı sunucudan da (authorized_keys) kaldırılsın mı?",
+    revoke_help: "Tekrar bağlanmak için şifre gerekecek",
+    removing_key: "Anahtar {} üzerinden kaldırılıyor…",
+    key_removed_server: "Anahtar sunucudan kaldırıldı",
+    revoke_failed: "Anahtar sunucudan kaldırılamadı: {}",
+    removed: "{} silindi",
+    list_empty: "Henüz kayıtlı sunucu yok. {} ile ekle",
+    col_name: "AD",
+    col_address: "ADRES",
+    col_auth: "GİRİŞ",
+    col_type: "TÜR",
+    col_fingerprint: "PARMAK İZİ",
+    col_used_by: "KULLANAN",
+    auth_password: "şifre",
+    auth_key: "anahtar",
+
+    p_key_name: "Anahtar adı",
+    ph_key_name: "ör. is",
+    p_key_file: "Anahtar dosyası",
+    help_key_file: "Özel anahtarın yolu (.pub dosyası değil)",
+    file_not_found: "Dosya bulunamadı",
+    key_chars: "Harf, rakam, '-', '_' ya da '.' kullan",
+    key_pub_suffix: "İsim .pub ile bitemez",
+    key_exists: "'{}' adında bir anahtar zaten var",
+    not_private_key: "{} özel anahtar gibi görünmüyor (.pub olmayan dosyayı seç)",
+    no_key_named: "'{}' adında anahtar yok (bkz. `tuxius key list`)",
+    key_missing: "'{}' anahtarı bulunamadı — `tuxius edit {}` ile başka birini seç",
+    key_login_failed: "anahtarla giriş çalışmadı",
+    imported: "{} anahtarı içe aktarıldı",
+    generated: "{} anahtarı üretildi (ed25519)",
+    pubkey_hint: "Açık anahtar — sunucuya ya da bulut paneline ekle:",
+    unused: "kullanılmıyor",
+    one_server: "1 sunucu",
+    n_servers: "{} sunucu",
+    import_item: "+ Anahtar dosyası içe aktar",
+    generate_item: "+ Yeni anahtar üret",
+    which_key: "Hangi anahtar?",
+    no_keys_err: "henüz anahtar yok — `tuxius key add` ile ekle",
+    keys_empty: "Henüz anahtar yok. {} ile içe aktar ya da üret",
+    add_key: "Anahtar ekle",
+    import_opt: "Anahtar dosyası içe aktar",
+    generate_opt: "Yeni anahtar üret",
+    show_which: "Hangi anahtar gösterilsin?",
+    remove_key_which: "Hangi anahtar silinsin?",
+    key_in_use: "'{}' anahtarını {} kullanıyor — önce o sunucuları sil ya da başka bir giriş yöntemine geçir",
+    delete_key_q: "'{}' anahtarı silinsin mi? Geri alınamaz",
+    deleted_key: "{} anahtarı silindi",
+    keys_title: "SSH anahtarları",
+    key_title: "'{}' anahtarı",
+    show_pub: "Açık anahtarı göster",
+    delete_key: "Anahtarı sil",
+    back: "← Geri",
+
+    help_pick: "↑↓ gezin · yazarak filtrele · enter seç · esc geri",
+    help_cancel: "↑↓ gezin · enter seç · esc iptal",
+    help_back: "↑↓ gezin · enter seç · esc geri",
+    help_menu: "↑↓ gezin · yazarak filtrele · enter seç · esc çık",
+    menu_add: "+ Yeni sunucu ekle",
+    menu_edit: "✎ Sunucu düzenle",
+    menu_remove: "✕ Sunucu sil",
+    menu_keys: "⚿ SSH anahtarları",
+    menu_lang: "⚑ Dil",
+    menu_quit: "⏻ Çıkış",
+    first_server: "Henüz kayıtlı sunucu yok — ilkini ekleyelim.",
+    p_lang: "Dil",
+    lang_set: "Dil {} olarak ayarlandı",
+};
+
+pub static RU: Texts = Texts {
+    tagline: "ssh без лишнего набора",
+    yes: "Да",
+    no: "Нет",
+    yes_no_default_yes: "Д/н",
+    yes_no_default_no: "д/Н",
+    yes_words: &["д", "да", "y", "yes"],
+    no_words: &["н", "нет", "n", "no"],
+    yes_no_error: "Введите д или н",
+
+    name_empty: "Имя не может быть пустым",
+    name_spaces: "Используйте имя без пробелов, например web-prod",
+    name_taken: "«{}» уже сохранён",
+    p_name: "Имя",
+    ph_name: "например, web-prod",
+    help_name: "Короткое имя, которое вы будете выбирать из списка",
+    p_host: "Хост",
+    ph_host: "IP или домен, например 203.0.113.10",
+    help_host: "Совет: можно ввести и root@1.2.3.4:2222",
+    host_empty: "Хост не может быть пустым",
+    p_user: "Пользователь",
+    p_port: "Порт",
+    port_error: "Введите номер порта от 1 до 65535",
+    p_password: "Пароль",
+
+    p_method: "Способ входа",
+    m_install: "Новый ключ Tuxius (рекомендуется)",
+    m_existing: "Мой SSH-ключ",
+    m_password: "Сохранённый пароль",
+    method_help: "новый ключ: пароль используется один раз и не сохраняется · сохранённый пароль: хранится в конфиге (chmod 600)",
+    installing: "Устанавливаю SSH-ключ на {}…",
+    key_installed: "Ключ установлен — пароль больше не нужен",
+    install_failed: "Не удалось установить ключ: {}",
+    fallback_q: "Сохранить с паролем вместо ключа?",
+    not_saved: "сервер не сохранён",
+    checking_key: "Проверяю ключ «{}» на {}…",
+    key_works: "Вход по ключу работает",
+    key_not_accepted: "Сервер пока не принимает этот ключ ({})",
+    install_q: "Установить его на сервер с помощью пароля?",
+    pw_once: "Нужен для одного входа — esc для отмены",
+    pw_saved: "Сохраняется в файле конфигурации (chmod 600)",
+    checking_login: "Проверяю вход на {}…",
+    login_failed: "Проверка входа не удалась: {}",
+    save_anyway: "Всё равно сохранить?",
+    login_works: "Вход работает",
+    saved: "{} сохранён — подключайтесь через {} или {}",
+
+    no_servers_err: "сохранённых серверов пока нет — выполните `tuxius add`",
+    no_server_named: "сервер «{}» не найден (см. `tuxius list`)",
+    ambiguous: "«{}» подходит к нескольким серверам: {}",
+    connect_to: "Подключиться к",
+    edit_which: "Какой сервер изменить?",
+    change_login: "Изменить способ входа (пароль / ключ)?",
+    currently: "сейчас: {}",
+    updated: "{} обновлён",
+    remove_which: "Какой сервер удалить?",
+    remove_q: "Удалить «{}»?",
+    revoke_q: "Также удалить его ключ с сервера (authorized_keys)?",
+    revoke_help: "Для повторного подключения понадобится пароль",
+    removing_key: "Удаляю ключ с {}…",
+    key_removed_server: "Ключ удалён с сервера",
+    revoke_failed: "Не удалось удалить ключ с сервера: {}",
+    removed: "{} удалён",
+    list_empty: "Сохранённых серверов пока нет. Добавьте через {}",
+    col_name: "ИМЯ",
+    col_address: "АДРЕС",
+    col_auth: "ВХОД",
+    col_type: "ТИП",
+    col_fingerprint: "ОТПЕЧАТОК",
+    col_used_by: "ИСПОЛЬЗУЕТСЯ",
+    auth_password: "пароль",
+    auth_key: "ключ",
+
+    p_key_name: "Имя ключа",
+    ph_key_name: "например, work",
+    p_key_file: "Файл ключа",
+    help_key_file: "Путь к закрытому ключу (не к файлу .pub)",
+    file_not_found: "Файл не найден",
+    key_chars: "Используйте буквы, цифры, «-», «_» или «.»",
+    key_pub_suffix: "Имя не может заканчиваться на .pub",
+    key_exists: "Ключ «{}» уже существует",
+    not_private_key: "{} не похож на закрытый ключ (выберите файл без .pub)",
+    no_key_named: "ключ «{}» не найден (см. `tuxius key list`)",
+    key_missing: "ключ «{}» не найден — выберите другой через `tuxius edit {}`",
+    key_login_failed: "вход по ключу не сработал",
+    imported: "Ключ {} импортирован",
+    generated: "Создан ключ {} (ed25519)",
+    pubkey_hint: "Открытый ключ — добавьте его на сервер или в облачную панель:",
+    unused: "не используется",
+    one_server: "1 сервер",
+    n_servers: "серверов: {}",
+    import_item: "+ Импортировать файл ключа",
+    generate_item: "+ Создать новый ключ",
+    which_key: "Какой ключ?",
+    no_keys_err: "ключей пока нет — добавьте через `tuxius key add`",
+    keys_empty: "Ключей пока нет. Импортируйте или создайте через {}",
+    add_key: "Добавить ключ",
+    import_opt: "Импортировать файл ключа",
+    generate_opt: "Создать новый ключ",
+    show_which: "Какой ключ показать?",
+    remove_key_which: "Какой ключ удалить?",
+    key_in_use: "ключ «{}» используется: {} — сначала удалите эти серверы или смените им способ входа",
+    delete_key_q: "Удалить ключ «{}»? Это нельзя отменить",
+    deleted_key: "Ключ {} удалён",
+    keys_title: "SSH-ключи",
+    key_title: "Ключ «{}»",
+    show_pub: "Показать открытый ключ",
+    delete_key: "Удалить ключ",
+    back: "← Назад",
+
+    help_pick: "↑↓ выбор · ввод для фильтра · enter выбрать · esc назад",
+    help_cancel: "↑↓ выбор · enter выбрать · esc отмена",
+    help_back: "↑↓ выбор · enter выбрать · esc назад",
+    help_menu: "↑↓ выбор · ввод для фильтра · enter выбрать · esc выход",
+    menu_add: "+ Добавить сервер",
+    menu_edit: "✎ Изменить сервер",
+    menu_remove: "✕ Удалить сервер",
+    menu_keys: "⚿ SSH-ключи",
+    menu_lang: "⚑ Язык",
+    menu_quit: "⏻ Выход",
+    first_server: "Сохранённых серверов пока нет — давайте добавим первый.",
+    p_lang: "Язык",
+    lang_set: "Язык изменён: {}",
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_locales() {
+        assert_eq!(Lang::parse("tr_TR.UTF-8"), Some(Lang::Tr));
+        assert_eq!(Lang::parse("ru-RU"), Some(Lang::Ru));
+        assert_eq!(Lang::parse("EN"), Some(Lang::En));
+        assert_eq!(Lang::parse("de_DE"), None);
+        assert_eq!(Lang::parse("C"), None);
+    }
+
+    #[test]
+    fn fills_placeholders() {
+        assert_eq!(fill("{} and {}", &["a", "b"]), "a and b");
+        assert_eq!(fill("no args", &[]), "no args");
+        assert_eq!(fill("{} {}", &["x"]), "x ");
+    }
+
+    #[test]
+    fn templates_have_matching_placeholders() {
+        let count = |s: &str| s.matches("{}").count();
+        let pairs = |t: &'static Texts| {
+            [
+                t.name_taken,
+                t.installing,
+                t.install_failed,
+                t.checking_key,
+                t.key_not_accepted,
+                t.checking_login,
+                t.login_failed,
+                t.saved,
+                t.no_server_named,
+                t.ambiguous,
+                t.currently,
+                t.updated,
+                t.remove_q,
+                t.removing_key,
+                t.revoke_failed,
+                t.removed,
+                t.list_empty,
+                t.key_exists,
+                t.not_private_key,
+                t.no_key_named,
+                t.key_missing,
+                t.imported,
+                t.generated,
+                t.n_servers,
+                t.keys_empty,
+                t.key_in_use,
+                t.delete_key_q,
+                t.deleted_key,
+                t.key_title,
+                t.lang_set,
+            ]
+        };
+        let en = pairs(&EN);
+        for other in [pairs(&TR), pairs(&RU)] {
+            for (a, b) in en.iter().zip(other.iter()) {
+                assert_eq!(count(a), count(b), "placeholder mismatch: {a:?} vs {b:?}");
+            }
+        }
+    }
+}

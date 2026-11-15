@@ -38,7 +38,7 @@ for _ in $(seq 30); do
     sleep 1
 done
 
-export TUXIUS_HOME="$SANDBOX/config" NO_COLOR=1
+export TUXIUS_HOME="$SANDBOX/config" NO_COLOR=1 TUXIUS_LANG=en
 mkdir -p "$SANDBOX/home"
 tx() { HOME="$SANDBOX/home" "$BIN" "$@"; }
 

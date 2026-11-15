@@ -51,7 +51,7 @@ pub fn banner() {
     }
     eprintln!(
         "  {}  {}",
-        dim("ssh, without the typing"),
+        dim(crate::i18n::t().tagline),
         dim(&format!("v{}", env!("CARGO_PKG_VERSION")))
     );
     eprintln!();

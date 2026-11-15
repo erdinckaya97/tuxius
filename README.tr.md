@@ -14,7 +14,8 @@
   <a href="#kurulum">Kurulum</a> ·
   <a href="#kullanım">Kullanım</a> ·
   <a href="#güvenlik">Güvenlik</a> ·
-  <a href="README.md">English</a>
+  <a href="README.md">English</a> ·
+  <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
@@ -32,6 +33,7 @@ Her seferinde `ssh root@203.0.113.10 -p 2222` yazıp şifre aramaktan sıkıldı
 - **Uzaktan komut** — `tuxius web -- df -h`.
 - **Kendi SSH anahtarların** — mevcut anahtarlarını içe aktar, yenisini üret, sil. Sunucuyu silerken anahtarını sunucudan da kaldırabilirsin.
 - **Bağımlılık yok** — sistemindeki OpenSSH'ı kullanan ~1 MB'lık tek Rust dosyası.
+- **Senin dilinde** — English, Türkçe ve Русский; sistem dilinden otomatik seçilir.
 
 ## Kurulum
 
@@ -72,6 +74,7 @@ tuxius
 | `tuxius key add` | Anahtar dosyası içe aktarır (`--file ~/.ssh/id_ed25519`) ya da yenisini üretir (`--generate`) |
 | `tuxius key show [isim]` | Açık anahtarı yazdırır (bulut paneline yapıştırmak için) |
 | `tuxius key rm [isim]` | Anahtarı siler (bir sunucu kullanıyorsa izin vermez) |
+| `tuxius lang [en\|tr\|ru]` | Arayüz dilini değiştirir |
 | `tuxius path` | Dosyaların nerede durduğunu gösterir |
 
 ### Giriş yöntemleri
@@ -80,7 +83,11 @@ tuxius
 - **Kendi SSH anahtarım** — kayıtlı bir anahtar seç ya da o an içe aktar / üret. Sunucu henüz kabul etmiyorsa Tuxius şifreyle kurabilir.
 - **Kayıtlı şifre** — anahtara izin vermeyen sunucular için.
 
-Anahtarlar `~/.config/tuxius/keys/` altında (chmod 600) durur. Menüden (`⚿ SSH keys`) ya da `tuxius key` ile yönetilir.
+Anahtarlar `~/.config/tuxius/keys/` altında (chmod 600) durur. Menüden (`⚿ SSH anahtarları`) ya da `tuxius key` ile yönetilir.
+
+### Dil
+
+Tuxius **English**, **Türkçe** ve **Русский** konuşur. Varsayılan olarak sistem dilini (`LANG`) kullanır. `tuxius lang tr` komutuyla ya da menüden (`⚑ Dil`) değiştirebilirsin; seçim kaydedilir. Tek seferlik için `TUXIUS_LANG=en tuxius`.
 
 ## Güvenlik
 

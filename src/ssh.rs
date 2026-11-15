@@ -1,3 +1,4 @@
+use crate::i18n::{fill, t};
 use crate::keys;
 use crate::store::{Auth, Server};
 use anyhow::{Context, Result, bail};
@@ -108,7 +109,7 @@ pub fn verify_key(server: &Server, key: &str) -> Result<()> {
     probe.key = Some(key.to_string());
     let mut cmd = command(&probe, None, &["-o", "BatchMode=yes"])?;
     cmd.arg("true");
-    run(cmd).context("key login did not work")
+    run(cmd).context(t().key_login_failed)
 }
 
 /// Removes the server's key from its `authorized_keys`, logging in with that key.
@@ -137,11 +138,7 @@ pub fn check_password(server: &Server, password: &str) -> Result<()> {
 /// `remote` run on the server when it's not empty.
 pub fn connect(server: &Server, remote: &[String]) -> Result<()> {
     if server.auth == Auth::Key && !keys::exists(server.key_name()) {
-        bail!(
-            "key '{}' is missing — pick another with `tuxius edit {}`",
-            server.key_name(),
-            server.name
-        );
+        bail!(fill(t().key_missing, &[server.key_name(), &server.name]));
     }
     let password = match server.auth {
         Auth::Password => server.password.as_deref(),

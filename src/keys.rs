@@ -1,3 +1,4 @@
+use crate::i18n::{fill, t};
 use crate::store::config_dir;
 use anyhow::{Context, Result, bail};
 use std::fs::{self, DirBuilder, OpenOptions};
@@ -35,17 +36,17 @@ pub fn exists(name: &str) -> bool {
 
 pub fn validate_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
-        Err("Name can't be empty".into())
+        Err(t().name_empty.into())
     } else if !name
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c))
         || name.starts_with('.')
     {
-        Err("Use letters, numbers, '-', '_' or '.'".into())
+        Err(t().key_chars.into())
     } else if name.ends_with(".pub") {
-        Err("Name can't end with .pub".into())
+        Err(t().key_pub_suffix.into())
     } else if exists(name) {
-        Err(format!("A key named '{name}' already exists"))
+        Err(fill(t().key_exists, &[name]))
     } else {
         Ok(())
     }
@@ -173,10 +174,7 @@ pub fn import(name: &str, source: &Path) -> Result<()> {
     let text = fs::read_to_string(source)
         .with_context(|| format!("could not read {}", source.display()))?;
     if !text.contains("PRIVATE KEY") {
-        bail!(
-            "{} doesn't look like a private key (pick the file without .pub)",
-            source.display()
-        );
+        bail!(fill(t().not_private_key, &[&source.display().to_string()]));
     }
     make_dir()?;
     let dest = path(name)?;
@@ -215,7 +213,7 @@ fn write_private(dest: &Path, bytes: &[u8]) -> Result<()> {
 pub fn remove(name: &str) -> Result<()> {
     let key = path(name)?;
     if !key.exists() {
-        bail!("no key named '{name}' (see `tuxius key list`)");
+        bail!(fill(t().no_key_named, &[name]));
     }
     fs::remove_file(&key)?;
     let _ = fs::remove_file(pub_of(&key));
