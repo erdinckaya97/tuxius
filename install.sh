@@ -11,9 +11,9 @@ set -eu
 REPO="erdinckaya97/tuxius"
 BIN="tuxius"
 
-say() { printf '  \033[38;5;45m›\033[0m %s\n' "$1"; }
-ok() { printf '  \033[38;5;84m✔\033[0m %s\n' "$1"; }
-die() { printf '  \033[38;5;203m✘\033[0m %s\n' "$1" >&2; exit 1; }
+say() { printf '  \033[38;5;220m›\033[0m %s\n' "$1"; }
+ok() { printf '  \033[32m✔\033[0m %s\n' "$1"; }
+die() { printf '  \033[31m✘\033[0m %s\n' "$1" >&2; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1; }
 
