@@ -32,7 +32,7 @@ Her seferinde `ssh root@203.0.113.10 -p 2222` yazıp şifre aramaktan sıkıldı
 - **Doğrudan bağlan** — `tuxius web` direkt bağlanır (benzersiz kısaltmalar da olur).
 - **Uzaktan komut** — `tuxius web -- df -h`.
 - **Kendi SSH anahtarların** — mevcut anahtarlarını içe aktar, yenisini üret, sil. Sunucuyu silerken anahtarını sunucudan da kaldırabilirsin.
-- **Bağımlılık yok** — sistemindeki OpenSSH'ı kullanan ~1 MB'lık tek Rust dosyası.
+- **Bağımlılık yok** — sistemindeki OpenSSH'ı kullanan ~1 MB'lık tek Rust dosyası. Linux, macOS ve Windows.
 - **Senin dilinde** — English, Türkçe ve Русский; sistem dilinden otomatik seçilir.
 
 ## Kurulum
@@ -43,6 +43,14 @@ curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh
 
 **Linux** (x86_64, arm64) ve **macOS** (Intel, Apple Silicon) desteklenir.
 
+**Windows** (10 / 11, x64 ve ARM) — PowerShell'de:
+
+```powershell
+irm https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.ps1 | iex
+```
+
+`tuxius.exe` dosyasını `%LOCALAPPDATA%\Programs\tuxius` klasörüne kurar ve `PATH`'e ekler; sonra PowerShell, cmd ya da Windows Terminal'den kullanabilirsin. Tuxius, Windows ile gelen OpenSSH istemcisini kullanır.
+
 Cargo ile: `cargo install --git https://github.com/erdinckaya97/tuxius`
 
 Kaldırmak için:
@@ -51,6 +59,8 @@ Kaldırmak için:
 sudo rm /usr/local/bin/tuxius        # veya ~/.local/bin/tuxius
 rm -rf ~/.config/tuxius
 ```
+
+Windows'ta `%LOCALAPPDATA%\Programs\tuxius` ve `%USERPROFILE%\.config\tuxius` klasörlerini silmen yeterli.
 
 ## Kullanım
 

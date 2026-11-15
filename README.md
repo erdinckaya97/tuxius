@@ -39,7 +39,7 @@ Tired of typing `ssh root@203.0.113.10 -p 2222` and digging for passwords? Tuxiu
 - **Direct connect** — `tuxius web` jumps straight in (unique prefixes work too).
 - **Run remote commands** — `tuxius web -- df -h`.
 - **Your own SSH keys** — import the keys you already use, generate new ones, delete them. Removing a server can also revoke its key on the server.
-- **Zero dependencies** — a single ~1 MB Rust binary that drives your system's OpenSSH.
+- **Zero dependencies** — a single ~1 MB Rust binary that drives your system's OpenSSH. Linux, macOS and Windows.
 - **Plain-text config** — one readable TOML file you can back up or edit.
 - **Speaks your language** — English, Türkçe and Русский, picked up from your system automatically.
 
@@ -50,6 +50,14 @@ curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh
 ```
 
 Works on **Linux** (x86_64, arm64) and **macOS** (Intel, Apple Silicon). The script downloads the right binary to `/usr/local/bin` (or `~/.local/bin`).
+
+**Windows** (10 / 11, x64 and ARM) — in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.ps1 | iex
+```
+
+It installs `tuxius.exe` to `%LOCALAPPDATA%\Programs\tuxius` and adds it to your `PATH`; then use it from PowerShell, cmd or Windows Terminal. Tuxius uses the OpenSSH client that ships with Windows.
 
 <details>
 <summary>Other ways</summary>
@@ -68,6 +76,8 @@ cargo install --git https://github.com/erdinckaya97/tuxius
 sudo rm /usr/local/bin/tuxius        # or ~/.local/bin/tuxius
 rm -rf ~/.config/tuxius
 ```
+
+On Windows, delete `%LOCALAPPDATA%\Programs\tuxius` and `%USERPROFILE%\.config\tuxius`.
 </details>
 
 ## Usage
@@ -81,7 +91,7 @@ The first time, Tuxius walks you through adding a server:
 ```
   ▀█▀ █ █ ▀▄▀ █ █ █ █▀
    █  █▄█ █ █ █ █▄█ ▄█
-  ssh, without the typing  v0.1.0
+  ssh, without the typing  v0.2.0
 
 › Name      web-prod
 › Host      203.0.113.10

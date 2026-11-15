@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.0
+
+- Windows support (10 / 11, x64 and ARM): works in PowerShell, cmd and Windows Terminal with the built-in OpenSSH client
+- Windows installer: `irm https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.ps1 | iex`
+
 ## v0.1.0
 
 First release.

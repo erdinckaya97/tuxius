@@ -32,7 +32,7 @@
 - **Прямое подключение** — `tuxius web` подключает сразу (подходят и уникальные префиксы).
 - **Удалённые команды** — `tuxius web -- df -h`.
 - **Ваши SSH-ключи** — импортируйте существующие ключи, создавайте новые, удаляйте. При удалении сервера можно убрать и его ключ с сервера.
-- **Без зависимостей** — один Rust-файл размером ~1 МБ, который использует системный OpenSSH.
+- **Без зависимостей** — один Rust-файл размером ~1 МБ, который использует системный OpenSSH. Linux, macOS и Windows.
 - **На вашем языке** — English, Türkçe и Русский; язык определяется по системе автоматически.
 
 ## Установка
@@ -43,6 +43,14 @@ curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh
 
 Поддерживаются **Linux** (x86_64, arm64) и **macOS** (Intel, Apple Silicon).
 
+**Windows** (10 / 11, x64 и ARM) — в PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.ps1 | iex
+```
+
+Скрипт устанавливает `tuxius.exe` в `%LOCALAPPDATA%\Programs\tuxius` и добавляет его в `PATH`; дальше Tuxius работает в PowerShell, cmd и Windows Terminal. Используется OpenSSH-клиент, встроенный в Windows.
+
 Через Cargo: `cargo install --git https://github.com/erdinckaya97/tuxius`
 
 Удаление:
@@ -51,6 +59,8 @@ curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh
 sudo rm /usr/local/bin/tuxius        # или ~/.local/bin/tuxius
 rm -rf ~/.config/tuxius
 ```
+
+В Windows удалите папки `%LOCALAPPDATA%\Programs\tuxius` и `%USERPROFILE%\.config\tuxius`.
 
 ## Использование
 

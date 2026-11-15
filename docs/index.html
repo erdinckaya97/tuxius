@@ -37,6 +37,10 @@
     h1 .grad { color: var(--accent); }
     .lead { color: var(--muted); font-size: 19px; margin: 20px 0 32px; max-width: 30ch; }
 
+    .os { display: flex; gap: 6px; margin-bottom: 10px; }
+    .os button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px;
+      padding: 5px 12px; font: 13px var(--mono); cursor: pointer; }
+    .os button.on { border-color: var(--accent); color: var(--accent); }
     .install { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line);
       border-radius: 12px; padding: 14px 14px 14px 18px; font: 14px var(--mono); max-width: 100%; }
     .install code { overflow-x: auto; white-space: nowrap; flex: 1; scrollbar-width: none; }
@@ -106,8 +110,12 @@
       <div>
         <h1>SSH,<br><span class="grad">without the typing.</span></h1>
         <p class="lead">Save your servers once. Type <b>tuxius</b>, pick one, you're in. No accounts, no cloud — just your terminal.</p>
+        <div class="os">
+          <button class="on" data-os="unix" onclick="pickOs('unix')">macOS / Linux</button>
+          <button data-os="win" onclick="pickOs('win')">Windows</button>
+        </div>
         <div class="install">
-          <span class="p">$</span>
+          <span class="p" id="prompt">$</span>
           <code id="cmd">curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh | sh</code>
           <button class="copy" onclick="copyCmd(this)">copy</button>
         </div>
@@ -138,9 +146,9 @@
 
     <section id="usage">
       <h2>Up and running in a minute</h2>
-      <p class="sub">Works on Linux and macOS, Intel and ARM.</p>
+      <p class="sub">Works on Linux, macOS and Windows, Intel and ARM.</p>
       <div class="steps">
-        <div class="step"><code>curl … | sh</code><p>Install with the one-liner above, or <code>cargo install --git</code>.</p></div>
+        <div class="step"><code>curl … | sh</code><p>Install with the one-liner above (PowerShell on Windows), or <code>cargo install --git</code>.</p></div>
         <div class="step"><code>tuxius add</code><p>Name it, enter the host and root password. Tuxius sets up a key for you.</p></div>
         <div class="step"><code>tuxius</code><p>Pick a server from the list. That's it — you're connected.</p></div>
       </div>
@@ -164,6 +172,17 @@
   </div>
 
   <script>
+    const installs = {
+      unix: ['$', 'curl -fsSL https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.sh | sh'],
+      win: ['PS>', 'irm https://raw.githubusercontent.com/erdinckaya97/tuxius/main/install.ps1 | iex'],
+    };
+    function pickOs(os) {
+      document.getElementById('prompt').textContent = installs[os][0];
+      document.getElementById('cmd').textContent = installs[os][1];
+      document.querySelectorAll('.os button').forEach(b => b.classList.toggle('on', b.dataset.os === os));
+    }
+    if (/Win/.test(navigator.platform || navigator.userAgent)) pickOs('win');
+
     function copyCmd(btn) {
       navigator.clipboard.writeText(document.getElementById('cmd').textContent).then(() => {
         btn.textContent = 'copied';
