@@ -91,7 +91,7 @@ The first time, Tuxius walks you through adding a server:
 ```
   ▀█▀ █ █ ▀▄▀ █ █ █ █▀
    █  █▄█ █ █ █ █▄█ ▄█
-  ssh, without the typing  v0.2.0
+  ssh, without the typing  v0.3.0
 
 › Name      web-prod
 › Host      203.0.113.10
@@ -152,7 +152,7 @@ When you add a server, Tuxius asks how to log in:
 
 - **New Tuxius key (recommended)** — enter the password once; Tuxius installs its own key on the server.
 - **My own SSH key** — pick a stored key, or import / generate one right there. If the server doesn't accept it yet, Tuxius can install it using the password.
-- **Saved password** — for servers that don't allow keys.
+- **Saved password** — for servers that don't allow keys; kept in your system keychain.
 
 Keys live in `~/.config/tuxius/keys/` (chmod 600). Manage them from the menu (`⚿ SSH keys`) or with `tuxius key`.
 
@@ -163,7 +163,7 @@ Tuxius speaks **English**, **Türkçe** and **Русский**. It follows your 
 ## Security
 
 - **SSH key (default, recommended).** Tuxius creates its own key at `~/.config/tuxius/keys/tuxius` and uses the password **once** to add the public key to the server's `~/.ssh/authorized_keys`. The password is never written to disk.
-- **Saved password (opt-in).** If a server doesn't allow keys, you can choose to save the password. It is stored in `~/.config/tuxius/servers.toml`, which is created with `chmod 600` (readable only by you). It is not encrypted — use keys whenever you can.
+- **Saved password (opt-in).** If a server doesn't allow keys, you can choose to save the password. It goes to your system keychain — Keychain on macOS, Credential Manager on Windows, GNOME Keyring / KWallet on Linux — never into the config file. On machines without a keychain (e.g. a headless server) it falls back to `~/.config/tuxius/servers.toml`, readable only by you (`chmod 600`). Passwords saved by older versions move to the keychain automatically.
 - Removing a server can also remove its key from the server (`tuxius rm --revoke`, or answer *yes* in the menu).
 - Passwords are handed to OpenSSH through `SSH_ASKPASS` — never via command-line arguments, so they don't show up in `ps`.
 - New host keys are accepted on first connect (`StrictHostKeyChecking=accept-new`); a *changed* host key is still refused, just like plain `ssh`.

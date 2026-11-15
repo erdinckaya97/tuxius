@@ -2,6 +2,7 @@
 # End-to-end test against a throwaway OpenSSH server in Docker.
 # With TUXIUS_E2E_EXTERNAL=1 it uses a server already listening on
 # 127.0.0.1:$TUXIUS_TEST_PORT (root / tuxius-test-pw) instead.
+# With TUXIUS_E2E_KEYCHAIN=1 saved passwords must go to the system keychain.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -14,6 +15,7 @@ pass() { printf '\033[32m✔\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✘\033[0m %s\n' "$1"; exit 1; }
 
 EXTERNAL=${TUXIUS_E2E_EXTERNAL:-}
+KEYCHAIN=${TUXIUS_E2E_KEYCHAIN:-}
 WINDOWS=
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) WINDOWS=1 ;; esac
 if [ -n "$WINDOWS" ]; then
@@ -81,6 +83,23 @@ grep -q 'auth = "password"' "$TUXIUS_HOME/servers.toml" || fail "password auth n
 [ "$(tx box-pw -- echo via-password)" = via-password ] || fail "password login"
 pass "add + connect with saved password"
 
+if [ -n "$KEYCHAIN" ]; then
+    grep -q '^password' "$TUXIUS_HOME/servers.toml" && fail "password must not be in the config file"
+    grep -q 'keychain = true' "$TUXIUS_HOME/servers.toml" || fail "password should be in the keychain"
+    pass "saved password lives in the system keychain"
+
+    # A password left in the file by an older version moves to the keychain.
+    sed -i.bak "s/^keychain = true$/password = \"$PASSWORD\"/" "$TUXIUS_HOME/servers.toml"
+    grep -q '^password' "$TUXIUS_HOME/servers.toml" || fail "test setup: plaintext password"
+    tx list >/dev/null
+    grep -q '^password' "$TUXIUS_HOME/servers.toml" && fail "plaintext password was not migrated"
+    [ "$(tx box-pw -- echo migrated)" = migrated ] || fail "login after migration"
+    pass "plaintext passwords move to the keychain"
+else
+    grep -q "^password = \"$PASSWORD\"" "$TUXIUS_HOME/servers.toml" || fail "password should be in the config file"
+    pass "without a keychain the password stays in the private config file"
+fi
+
 private "$TUXIUS_HOME/servers.toml" || fail "servers.toml must be private"
 pass "config file is private"
 
@@ -100,6 +119,10 @@ pass "list"
 
 tx rm box-pw --yes
 tx list | grep -q box-pw && fail "remove"
+if [ -n "$KEYCHAIN" ] && command -v secret-tool >/dev/null; then
+    secret-tool lookup service "tuxius:$TUXIUS_HOME" account box-pw >/dev/null \
+        && fail "keychain entry should be deleted with the server"
+fi
 pass "remove"
 
 ssh-keygen -q -t ed25519 -N "" -C mine -f "$SANDBOX/mykey"

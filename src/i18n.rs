@@ -67,7 +67,9 @@ pub fn detect(saved: Option<&str>) -> Lang {
             return Lang::parse(&value).unwrap_or(Lang::En);
         }
     }
-    Lang::En
+    sys_locale::get_locale()
+        .and_then(|locale| Lang::parse(&locale))
+        .unwrap_or(Lang::En)
 }
 
 pub fn t() -> &'static Texts {
@@ -112,6 +114,8 @@ pub struct Texts {
     pub ph_host: &'static str,
     pub help_host: &'static str,
     pub host_empty: &'static str,
+    pub bad_destination: &'static str,
+    pub keychain_failed: &'static str,
     pub p_user: &'static str,
     pub p_port: &'static str,
     pub port_error: &'static str,
@@ -237,6 +241,8 @@ pub static EN: Texts = Texts {
     ph_host: "IP or domain, e.g. 203.0.113.10",
     help_host: "Tip: root@1.2.3.4:2222 also works",
     host_empty: "Host can't be empty",
+    bad_destination: "User and host can't start with '-' or contain spaces",
+    keychain_failed: "could not read the saved password from the system keychain ({})",
     p_user: "User",
     p_port: "Port",
     port_error: "Enter a port number between 1 and 65535",
@@ -246,7 +252,7 @@ pub static EN: Texts = Texts {
     m_install: "New Tuxius key (recommended)",
     m_existing: "My own SSH key",
     m_password: "Saved password",
-    method_help: "new key: password is used once, never stored · saved password: kept in config (chmod 600)",
+    method_help: "new key: password is used once, never stored · saved password: kept in your system keychain",
     installing: "Installing SSH key on {}…",
     key_installed: "Key installed — no password needed from now on",
     install_failed: "Could not install key: {}",
@@ -257,7 +263,7 @@ pub static EN: Texts = Texts {
     key_not_accepted: "The server doesn't accept this key yet ({})",
     install_q: "Install it on the server using the password?",
     pw_once: "Used to log in once — esc to cancel",
-    pw_saved: "Saved in your config file (chmod 600)",
+    pw_saved: "Kept in your system keychain (or the config file if there is none)",
     checking_login: "Checking login to {}…",
     login_failed: "Login check failed: {}",
     save_anyway: "Save anyway?",
@@ -362,6 +368,8 @@ pub static TR: Texts = Texts {
     ph_host: "IP ya da alan adı, ör. 203.0.113.10",
     help_host: "İpucu: root@1.2.3.4:2222 de yazabilirsin",
     host_empty: "Adres boş olamaz",
+    bad_destination: "Kullanıcı ve adres '-' ile başlayamaz, boşluk içeremez",
+    keychain_failed: "kayıtlı şifre sistem anahtar zincirinden okunamadı ({})",
     p_user: "Kullanıcı",
     p_port: "Port",
     port_error: "1 ile 65535 arasında bir port gir",
@@ -371,7 +379,7 @@ pub static TR: Texts = Texts {
     m_install: "Yeni Tuxius anahtarı (önerilen)",
     m_existing: "Kendi SSH anahtarım",
     m_password: "Kayıtlı şifre",
-    method_help: "yeni anahtar: şifre bir kez kullanılır, saklanmaz · kayıtlı şifre: ayar dosyasında durur (chmod 600)",
+    method_help: "yeni anahtar: şifre bir kez kullanılır, saklanmaz · kayıtlı şifre: sistem anahtar zincirinde durur",
     installing: "{} üzerine SSH anahtarı kuruluyor…",
     key_installed: "Anahtar kuruldu — artık şifre gerekmiyor",
     install_failed: "Anahtar kurulamadı: {}",
@@ -382,7 +390,7 @@ pub static TR: Texts = Texts {
     key_not_accepted: "Sunucu bu anahtarı henüz kabul etmiyor ({})",
     install_q: "Şifreyle sunucuya kurulsun mu?",
     pw_once: "Bir kez giriş için kullanılır — iptal için esc",
-    pw_saved: "Ayar dosyana kaydedilir (chmod 600)",
+    pw_saved: "Sistem anahtar zincirinde saklanır (yoksa ayar dosyasında)",
     checking_login: "{} girişi kontrol ediliyor…",
     login_failed: "Giriş denemesi başarısız: {}",
     save_anyway: "Yine de kaydedilsin mi?",
@@ -487,6 +495,8 @@ pub static RU: Texts = Texts {
     ph_host: "IP или домен, например 203.0.113.10",
     help_host: "Совет: можно ввести и root@1.2.3.4:2222",
     host_empty: "Хост не может быть пустым",
+    bad_destination: "Пользователь и хост не могут начинаться с '-' или содержать пробелы",
+    keychain_failed: "не удалось прочитать сохранённый пароль из системной связки ключей ({})",
     p_user: "Пользователь",
     p_port: "Порт",
     port_error: "Введите номер порта от 1 до 65535",
@@ -496,7 +506,7 @@ pub static RU: Texts = Texts {
     m_install: "Новый ключ Tuxius (рекомендуется)",
     m_existing: "Мой SSH-ключ",
     m_password: "Сохранённый пароль",
-    method_help: "новый ключ: пароль используется один раз и не сохраняется · сохранённый пароль: хранится в конфиге (chmod 600)",
+    method_help: "новый ключ: пароль используется один раз и не сохраняется · сохранённый пароль: хранится в системной связке ключей",
     installing: "Устанавливаю SSH-ключ на {}…",
     key_installed: "Ключ установлен — пароль больше не нужен",
     install_failed: "Не удалось установить ключ: {}",
@@ -507,7 +517,7 @@ pub static RU: Texts = Texts {
     key_not_accepted: "Сервер пока не принимает этот ключ ({})",
     install_q: "Установить его на сервер с помощью пароля?",
     pw_once: "Нужен для одного входа — esc для отмены",
-    pw_saved: "Сохраняется в файле конфигурации (chmod 600)",
+    pw_saved: "Хранится в системной связке ключей (или в файле настроек, если её нет)",
     checking_login: "Проверяю вход на {}…",
     login_failed: "Проверка входа не удалась: {}",
     save_anyway: "Всё равно сохранить?",

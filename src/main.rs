@@ -2,6 +2,7 @@ mod app;
 mod i18n;
 mod keys;
 mod private;
+mod secrets;
 mod ssh;
 mod store;
 mod ui;
@@ -135,6 +136,9 @@ fn run(cli: Cli) -> Result<()> {
     ui::install_theme();
     let mut store = Store::load()?;
     i18n::set(i18n::detect(store.lang.as_deref()));
+    if store.needs_migration() {
+        store.save()?;
+    }
     match (cli.command, cli.server) {
         (None, None) => app::menu(&mut store),
         (None, Some(name)) => app::connect(&mut store, Some(name), &cli.remote),

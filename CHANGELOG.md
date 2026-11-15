@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0
+
+- Saved passwords are kept in the system keychain (macOS Keychain, Windows Credential Manager, GNOME Keyring / KWallet) instead of the config file; existing ones move there automatically
+- Windows: the interface follows the Windows display language
+- Users and hosts starting with `-` are rejected, and ssh never reads them as options
+
 ## v0.2.0
 
 - Windows support (10 / 11, x64 and ARM): works in PowerShell, cmd and Windows Terminal with the built-in OpenSSH client

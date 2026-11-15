@@ -1,5 +1,6 @@
 use crate::i18n::{fill, t};
 use crate::private;
+use crate::secrets;
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -26,8 +27,12 @@ pub struct Server {
     /// Key name in the Tuxius key store; `None` means the default key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
+    /// Only for servers without a system keychain; see `keychain`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    /// The password is kept in the system keychain under the server's name.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub keychain: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_used: Option<u64>,
 }
@@ -62,6 +67,39 @@ impl Server {
             (Auth::Password, _) => t().auth_password.into(),
             (Auth::Key, None) => t().auth_key.into(),
             (Auth::Key, Some(k)) => format!("{}: {k}", t().auth_key),
+        }
+    }
+
+    /// The saved password, wherever it is kept.
+    pub fn saved_password(&self) -> Result<Option<String>> {
+        match (self.auth, &self.password) {
+            (Auth::Password, Some(pw)) => Ok(Some(pw.clone())),
+            (Auth::Password, None) if self.keychain => secrets::get(&self.name)
+                .map(Some)
+                .map_err(|e| anyhow::anyhow!(fill(t().keychain_failed, &[&format!("{e:#}")]))),
+            _ => Ok(None),
+        }
+    }
+
+    /// Moves a password typed in this run into the keychain, and drops
+    /// keychain entries the server no longer needs.
+    fn sync_secret(&mut self) {
+        match (self.auth, self.password.as_deref()) {
+            (Auth::Password, Some(pw)) => {
+                let stored = secrets::available() && secrets::set(&self.name, pw).is_ok();
+                if self.keychain && !stored {
+                    let _ = secrets::delete(&self.name);
+                }
+                self.keychain = stored;
+            }
+            (Auth::Password, None) => {}
+            (Auth::Key, _) => {
+                if self.keychain {
+                    let _ = secrets::delete(&self.name);
+                }
+                self.keychain = false;
+                self.password = None;
+            }
         }
     }
 
@@ -114,12 +152,37 @@ impl Store {
         &self.path
     }
 
-    pub fn save(&self) -> Result<()> {
+    /// True when some password still sits in the config file although a
+    /// keychain could hold it.
+    pub fn needs_migration(&self) -> bool {
+        secrets::available()
+            && self
+                .servers
+                .iter()
+                .any(|s| s.auth == Auth::Password && s.password.is_some() && !s.keychain)
+    }
+
+    pub fn save(&mut self) -> Result<()> {
+        for server in &mut self.servers {
+            server.sync_secret();
+        }
         let dir = self.path.parent().context("invalid config path")?;
         private::create_dir(dir)?;
 
+        let on_disk = Store {
+            lang: self.lang.clone(),
+            servers: self
+                .servers
+                .iter()
+                .map(|s| Server {
+                    password: if s.keychain { None } else { s.password.clone() },
+                    ..s.clone()
+                })
+                .collect(),
+            path: PathBuf::new(),
+        };
         let tmp = self.path.with_extension("toml.tmp");
-        let text = toml::to_string_pretty(self)?;
+        let text = toml::to_string_pretty(&on_disk)?;
         {
             let mut file = private::create_file(&tmp, false)?;
             file.write_all(text.as_bytes())?;
@@ -218,6 +281,7 @@ mod tests {
             auth: Auth::Key,
             key: None,
             password: None,
+            keychain: false,
             last_used,
         }
     }

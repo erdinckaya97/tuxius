@@ -69,7 +69,7 @@ fn command(server: &Server, password: Option<&str>, extra: &[&str]) -> Result<Co
         }
         (None, Auth::Password) => {}
     }
-    cmd.args(extra).arg(server.target());
+    cmd.args(extra).arg("--").arg(server.target());
     Ok(cmd)
 }
 
@@ -140,11 +140,8 @@ pub fn connect(server: &Server, remote: &[String]) -> Result<()> {
     if server.auth == Auth::Key && !keys::exists(server.key_name()) {
         bail!(fill(t().key_missing, &[server.key_name(), &server.name]));
     }
-    let password = match server.auth {
-        Auth::Password => server.password.as_deref(),
-        Auth::Key => None,
-    };
-    let mut cmd = command(server, password, &[])?;
+    let password = server.saved_password()?;
+    let mut cmd = command(server, password.as_deref(), &[])?;
     cmd.args(remote);
     #[cfg(unix)]
     {

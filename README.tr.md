@@ -91,7 +91,7 @@ tuxius
 
 - **Yeni Tuxius anahtarı (önerilen)** — şifreyi bir kez girersin, Tuxius sunucuya kendi anahtarını kurar.
 - **Kendi SSH anahtarım** — kayıtlı bir anahtar seç ya da o an içe aktar / üret. Sunucu henüz kabul etmiyorsa Tuxius şifreyle kurabilir.
-- **Kayıtlı şifre** — anahtara izin vermeyen sunucular için.
+- **Kayıtlı şifre** — anahtara izin vermeyen sunucular için; sistemin şifre kasasında saklanır.
 
 Anahtarlar `~/.config/tuxius/keys/` altında (chmod 600) durur. Menüden (`⚿ SSH anahtarları`) ya da `tuxius key` ile yönetilir.
 
@@ -102,7 +102,7 @@ Tuxius **English**, **Türkçe** ve **Русский** konuşur. Varsayılan ola
 ## Güvenlik
 
 - **SSH anahtarı (varsayılan, önerilen).** Tuxius `~/.config/tuxius/keys/tuxius` adında kendi anahtarını oluşturur, şifreyi **bir kez** kullanarak açık anahtarı sunucunun `~/.ssh/authorized_keys` dosyasına ekler. Şifre diske yazılmaz.
-- **Kayıtlı şifre (isteğe bağlı).** Sunucu anahtar kabul etmiyorsa şifreyi kaydetmeyi seçebilirsin. `~/.config/tuxius/servers.toml` dosyasında, sadece senin okuyabileceğin şekilde (`chmod 600`) saklanır. Şifrelenmez — mümkünse anahtar kullan.
+- **Kayıtlı şifre (isteğe bağlı).** Sunucu anahtar kabul etmiyorsa şifreyi kaydetmeyi seçebilirsin. Şifre ayar dosyasına değil, sisteminin şifre kasasına gider: macOS'ta Anahtar Zinciri, Windows'ta Kimlik Bilgisi Yöneticisi, Linux'ta GNOME Keyring / KWallet. Kasası olmayan makinelerde (ör. ekransız sunucular) `~/.config/tuxius/servers.toml` dosyasında, sadece senin okuyabileceğin şekilde (`chmod 600`) saklanır. Eski sürümlerin kaydettiği şifreler otomatik olarak kasaya taşınır.
 - Şifre OpenSSH'a `SSH_ASKPASS` üzerinden verilir, komut satırında görünmez.
 
 ## Lisans

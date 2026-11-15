@@ -1,5 +1,6 @@
 use crate::i18n::{self, fill, t};
 use crate::keys;
+use crate::secrets;
 use crate::ssh;
 use crate::store::{Auth, Server, Store, parse_destination};
 use crate::ui;
@@ -26,7 +27,7 @@ enum Method {
     Install,
     /// Use a key from the Tuxius key store.
     Existing(String),
-    /// Keep the password in the config file.
+    /// Keep the password in the system keychain (or the config file).
     Password,
 }
 
@@ -83,16 +84,32 @@ fn prompt_name(store: &Store, initial: Option<&str>, except: Option<usize>) -> R
     Ok(prompt.prompt()?.trim().to_string())
 }
 
+/// ssh would read a user or host starting with '-' as an option.
+fn valid_destination(user: &str, host: &str) -> Result<(), String> {
+    if host.is_empty() {
+        Err(t().host_empty.into())
+    } else if [user, host]
+        .iter()
+        .any(|part| part.starts_with('-') || part.chars().any(char::is_whitespace))
+    {
+        Err(t().bad_destination.into())
+    } else {
+        Ok(())
+    }
+}
+
 fn prompt_host(initial: Option<&str>) -> Result<String> {
     let mut prompt = Text::new(t().p_host)
         .with_placeholder(t().ph_host)
         .with_help_message(t().help_host)
         .with_validator(|input: &str| {
-            Ok(if input.trim().is_empty() {
-                Validation::Invalid(t().host_empty.into())
-            } else {
-                Validation::Valid
-            })
+            let (user, host, _) = parse_destination(input);
+            Ok(
+                match valid_destination(user.as_deref().unwrap_or(""), &host) {
+                    Ok(()) => Validation::Valid,
+                    Err(msg) => Validation::Invalid(msg.into()),
+                },
+            )
         });
     if let Some(initial) = initial {
         prompt = prompt.with_initial_value(initial);
@@ -101,7 +118,19 @@ fn prompt_host(initial: Option<&str>) -> Result<String> {
 }
 
 fn prompt_user(default: &str) -> Result<String> {
-    let user = Text::new(t().p_user).with_default(default).prompt()?;
+    let user = Text::new(t().p_user)
+        .with_default(default)
+        .with_validator(|input: &str| {
+            let user = input.trim();
+            Ok(
+                if user.starts_with('-') || user.chars().any(char::is_whitespace) {
+                    Validation::Invalid(t().bad_destination.into())
+                } else {
+                    Validation::Valid
+                },
+            )
+        })
+        .prompt()?;
     Ok(if user.trim().is_empty() {
         default.to_string()
     } else {
@@ -283,6 +312,9 @@ pub fn add(store: &mut Store, opts: AddOptions) -> Result<()> {
         (None, None) if scripted => 22,
         (None, None) => prompt_port(22)?,
     };
+    if let Err(msg) = valid_destination(&user, &host) {
+        bail!(msg);
+    }
 
     let method = match (opts.key, opts.auth) {
         (Some(key), _) => {
@@ -310,6 +342,7 @@ pub fn add(store: &mut Store, opts: AddOptions) -> Result<()> {
         auth: Auth::Key,
         key: None,
         password: None,
+        keychain: false,
         last_used: None,
     };
     setup_login(&mut server, method, password)?;
@@ -386,6 +419,10 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
         None => prompt_port(current.port)?,
     };
 
+    if let Err(msg) = valid_destination(&user, &host) {
+        bail!(msg);
+    }
+
     let mut server = Server {
         name,
         host,
@@ -393,6 +430,11 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
         port,
         ..current.clone()
     };
+    let renamed = server.name != current.name;
+    if renamed && current.keychain {
+        // The keychain entry is filed under the old name; re-save it under the new one.
+        server.password = current.saved_password()?;
+    }
     let moved =
         server.host != current.host || server.user != current.user || server.port != current.port;
     ui::step(&fill(t().currently, &[&current.auth_label()]));
@@ -404,6 +446,9 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
 
     store.servers[idx] = server;
     store.save()?;
+    if current.keychain && (renamed || !store.servers[idx].keychain) {
+        let _ = secrets::delete(&current.name);
+    }
     ui::ok(&fill(t().updated, &[&ui::bold(&store.servers[idx].name)]));
     Ok(())
 }
@@ -432,6 +477,9 @@ pub fn remove(store: &mut Store, name: Option<String>, yes: bool, revoke: bool) 
     }
     store.servers.remove(idx);
     store.save()?;
+    if server.keychain {
+        let _ = secrets::delete(&server.name);
+    }
     ui::ok(&fill(t().removed, &[&ui::bold(&server.name)]));
     Ok(())
 }
