@@ -55,6 +55,6 @@ jobs:
         env:
           TUXIUS_E2E_EXTERNAL: "1"
         run: |
-          ssh -V
-          wsl -u root -e /usr/sbin/sshd -D -e -p 2222 -o PermitRootLogin=yes -o PasswordAuthentication=yes &
+          /c/Windows/System32/OpenSSH/ssh.exe -V
+          MSYS_NO_PATHCONV=1 wsl -u root -e /usr/sbin/sshd -D -e -p 2222 -o PermitRootLogin=yes -o PasswordAuthentication=yes &
           ./tests/e2e.sh
