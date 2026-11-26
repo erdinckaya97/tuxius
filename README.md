@@ -166,7 +166,7 @@ Keys live in `~/.config/tuxius/keys/` (chmod 600). Manage them from the menu (`�
 
 - **iCloud** — offered on a Mac when iCloud Drive is turned on. The same Apple ID on another Mac picks it up.
 - **A folder** — Dropbox, OneDrive, Google Drive, Syncthing, or any other folder that shows up on the other computer.
-- **An address** — a WebDAV folder. Nextcloud, ownCloud, and most clouds you host yourself use this: `https://cloud.example/remote.php/dav/files/your-name`. A cloud that is not in the list still works if it syncs a folder or speaks WebDAV.
+- **An address** — a WebDAV folder. Nextcloud, ownCloud, and most clouds you host yourself use this: `https://cloud.example/remote.php/dav/files/your-name`. Tuxius saves a file named `tuxius.vault` in that folder. A cloud that is not in the list still works if it syncs a folder or speaks WebDAV.
 
 iCloud is a Mac option. Windows and Linux offer the folder and the address. On a Mac those two are there as well. Set it up on the computer that already has your servers, then run `tuxius sync` on the other one and type the same passphrase.
 

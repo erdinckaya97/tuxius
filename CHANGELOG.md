@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.1
+
+- Choosing a Nextcloud or other WebDAV address says that a file named `tuxius.vault` is placed in that folder
+
 ## v0.4.0
 
 - `tuxius sync` keeps an encrypted copy of your servers, saved passwords, and SSH keys. On a Mac with iCloud Drive, iCloud is offered. Every system can also use a synced folder (Dropbox, OneDrive, Google Drive, Syncthing, or any other) or a WebDAV address (Nextcloud, ownCloud, or a cloud you host)

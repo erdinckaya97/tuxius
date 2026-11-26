@@ -104,7 +104,7 @@ Anahtarlar `~/.config/tuxius/keys/` altında (chmod 600) durur. Menüden (`⚿ S
 
 - **iCloud** — iCloud Drive açık olan Mac'te listede hazır gelir. Aynı Apple hesabındaki diğer Mac de onu görür.
 - **Klasör** — Dropbox, OneDrive, Google Drive, Syncthing ya da diğer bilgisayarda görünen herhangi bir klasör.
-- **Adres** — WebDAV klasörü. Nextcloud, ownCloud ve kendi kurduğun çoğu bulut bunu kullanır: `https://cloud.example/remote.php/dav/files/adin`. Listede adı olmayan bir bulut da, klasör eşitliyorsa ya da WebDAV adresi varsa bağlanır.
+- **Adres** — WebDAV klasörü. Nextcloud, ownCloud ve kendi kurduğun çoğu bulut bunu kullanır: `https://cloud.example/remote.php/dav/files/adin`. Tuxius bu klasöre `tuxius.vault` dosyasını koyar. Listede adı olmayan bir bulut da, klasör eşitliyorsa ya da WebDAV adresi varsa bağlanır.
 
 iCloud yalnızca Mac seçeneğidir. Windows ve Linux'ta klasör ve adres çıkar. Mac'te bu ikisi de durur. Önce sunucuların durduğu bilgisayarda kur, sonra diğerinde `tuxius sync` deyip aynı parolayı yaz.
 

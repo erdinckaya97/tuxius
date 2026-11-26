@@ -291,6 +291,7 @@ fn icloud_dir() -> Option<PathBuf> {
 }
 
 fn prompt_folder() -> Result<String> {
+    ui::step(t().sync_vault_note);
     let raw = Text::new(t().sync_folder_q)
         .with_placeholder(t().sync_folder_ph)
         .with_help_message(t().sync_folder_help)
@@ -317,6 +318,7 @@ fn prompt_folder() -> Result<String> {
 }
 
 fn prompt_address() -> Result<(String, String, String)> {
+    ui::step(t().sync_vault_note);
     let url = Text::new(t().sync_url_q)
         .with_placeholder(t().sync_url_ph)
         .with_help_message(t().sync_url_help)

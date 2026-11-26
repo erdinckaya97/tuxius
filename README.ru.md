@@ -104,7 +104,7 @@ tuxius
 
 - **iCloud** — предлагается на Mac, если включён iCloud Drive. Другой Mac с тем же Apple ID её видит.
 - **Папка** — Dropbox, OneDrive, Google Drive, Syncthing или любая папка, которая появляется на другом компьютере.
-- **Адрес** — папка WebDAV. Так работают Nextcloud, ownCloud и большинство своих облаков: `https://cloud.example/remote.php/dav/files/имя`. Облако не из списка тоже подходит, если синхронизирует папку или говорит по WebDAV.
+- **Адрес** — папка WebDAV. Так работают Nextcloud, ownCloud и большинство своих облаков: `https://cloud.example/remote.php/dav/files/имя`. Tuxius кладёт в эту папку файл `tuxius.vault`. Облако не из списка тоже подходит, если синхронизирует папку или говорит по WebDAV.
 
 iCloud есть только на Mac. В Windows и Linux предлагаются папка и адрес. На Mac они тоже есть. Сначала настройте компьютер, где уже лежат серверы, затем на другом выполните `tuxius sync` и введите ту же фразу.
 
