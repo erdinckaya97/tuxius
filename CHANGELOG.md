@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.1
+
+- The port question no longer snaps back to 22. A spare Enter from the previous question was accepted as "keep 22" before a different port could be typed, and the suggestion stayed on screen beside whatever you wrote
+
 ## v0.3.0
 
 - Saved passwords are kept in the system keychain (macOS Keychain, Windows Credential Manager, GNOME Keyring / KWallet) instead of the config file; existing ones move there automatically

@@ -6,7 +6,7 @@ use crate::store::{Auth, Server, Store, parse_destination};
 use crate::ui;
 use anyhow::{Result, bail};
 use inquire::validator::Validation;
-use inquire::{Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select, Text};
+use inquire::{Confirm, InquireError, Password, PasswordDisplayMode, Select, Text};
 use std::fmt;
 use std::io::{BufRead, IsTerminal};
 
@@ -139,10 +139,35 @@ fn prompt_user(default: &str) -> Result<String> {
 }
 
 fn prompt_port(default: u16) -> Result<u16> {
-    Ok(CustomType::<u16>::new(t().p_port)
-        .with_default(default)
-        .with_error_message(t().port_error)
-        .prompt()?)
+    let suggested = default.to_string();
+    let help = fill(t().help_port, &[&suggested]);
+    // No `with_default`: that draws "(22)" beside the cursor and also accepts
+    // an empty Enter as 22. A spare newline from the previous question was
+    // therefore saved as port 22 before another port could be typed.
+    let raw = Text::new(t().p_port)
+        .with_placeholder(&suggested)
+        .with_help_message(&help)
+        .with_validator(|input: &str| {
+            Ok(if parse_port(input).is_some() {
+                Validation::Valid
+            } else {
+                Validation::Invalid(t().port_error.into())
+            })
+        })
+        .prompt()?;
+    match parse_port(&raw) {
+        Some(port) => Ok(port),
+        None => bail!(t().port_error),
+    }
+}
+
+/// A port the user actually typed. Empty input is rejected so a leftover
+/// Enter cannot silently keep the suggestion.
+fn parse_port(input: &str) -> Option<u16> {
+    match input.trim().parse::<u16>() {
+        Ok(port) if port >= 1 => Some(port),
+        _ => None,
+    }
 }
 
 fn prompt_password(help: &str) -> Result<String> {
@@ -925,4 +950,20 @@ pub fn language(store: &mut Store, code: Option<String>) -> Result<()> {
     store.save()?;
     ui::ok(&fill(t().lang_set, &[lang.native_name()]));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_port;
+
+    #[test]
+    fn port_must_be_typed() {
+        assert_eq!(parse_port(""), None);
+        assert_eq!(parse_port("   "), None);
+        assert_eq!(parse_port("0"), None);
+        assert_eq!(parse_port("65536"), None);
+        assert_eq!(parse_port("22"), Some(22));
+        assert_eq!(parse_port(" 2222 "), Some(2222));
+        assert_eq!(parse_port("65535"), Some(65535));
+    }
 }

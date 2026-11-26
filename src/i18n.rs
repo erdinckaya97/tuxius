@@ -118,6 +118,7 @@ pub struct Texts {
     pub keychain_failed: &'static str,
     pub p_user: &'static str,
     pub p_port: &'static str,
+    pub help_port: &'static str,
     pub port_error: &'static str,
     pub p_password: &'static str,
 
@@ -245,6 +246,7 @@ pub static EN: Texts = Texts {
     keychain_failed: "could not read the saved password from the system keychain ({})",
     p_user: "User",
     p_port: "Port",
+    help_port: "Type the port. {} is only a suggestion",
     port_error: "Enter a port number between 1 and 65535",
     p_password: "Password",
 
@@ -372,6 +374,7 @@ pub static TR: Texts = Texts {
     keychain_failed: "kayıtlı şifre sistem anahtar zincirinden okunamadı ({})",
     p_user: "Kullanıcı",
     p_port: "Port",
+    help_port: "Portu yaz. {} sadece öneri; Enter tek başına onu seçmez",
     port_error: "1 ile 65535 arasında bir port gir",
     p_password: "Şifre",
 
@@ -499,6 +502,7 @@ pub static RU: Texts = Texts {
     keychain_failed: "не удалось прочитать сохранённый пароль из системной связки ключей ({})",
     p_user: "Пользователь",
     p_port: "Порт",
+    help_port: "Введите порт. {} — только подсказка, Enter сам её не выбирает",
     port_error: "Введите номер порта от 1 до 65535",
     p_password: "Пароль",
 
@@ -628,6 +632,7 @@ mod tests {
         let pairs = |t: &'static Texts| {
             [
                 t.name_taken,
+                t.help_port,
                 t.installing,
                 t.install_failed,
                 t.checking_key,
