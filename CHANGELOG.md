@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.2
+
+- `tuxius update` downloads and installs the latest release
+- When a newer release is out, Tuxius says so and points at `tuxius update`
+
 ## v0.3.1
 
 - The port question no longer snaps back to 22. A spare Enter from the previous question was accepted as "keep 22" before a different port could be typed, and the suggestion stayed on screen beside whatever you wrote

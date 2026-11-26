@@ -6,6 +6,7 @@ mod secrets;
 mod ssh;
 mod store;
 mod ui;
+mod update;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -92,6 +93,8 @@ enum Command {
     Lang { code: Option<String> },
     /// Show where Tuxius keeps its files
     Path,
+    /// Download and install the latest Tuxius
+    Update,
 }
 
 #[derive(Subcommand)]
@@ -138,6 +141,11 @@ fn run(cli: Cli) -> Result<()> {
     i18n::set(i18n::detect(store.lang.as_deref()));
     if store.needs_migration() {
         store.save()?;
+    }
+    let menu = cli.command.is_none() && cli.server.is_none();
+    let updating = matches!(cli.command, Some(Command::Update));
+    if !menu && !updating {
+        update::announce(false);
     }
     match (cli.command, cli.server) {
         (None, None) => app::menu(&mut store),
@@ -190,6 +198,7 @@ fn run(cli: Cli) -> Result<()> {
                 println!("keys     {}", keys::dir()?.display());
                 Ok(())
             }
+            Command::Update => update::perform(),
         },
     }
 }

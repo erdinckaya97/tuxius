@@ -220,6 +220,16 @@ pub struct Texts {
     pub first_server: &'static str,
     pub p_lang: &'static str,
     pub lang_set: &'static str,
+
+    pub update_available: &'static str,
+    pub update_checking: &'static str,
+    pub update_downloading: &'static str,
+    pub update_done: &'static str,
+    pub update_current: &'static str,
+    pub update_ahead: &'static str,
+    pub update_sudo: &'static str,
+    pub update_failed: &'static str,
+    pub update_no_curl: &'static str,
 }
 
 pub static EN: Texts = Texts {
@@ -348,6 +358,16 @@ pub static EN: Texts = Texts {
     first_server: "No servers saved yet — let's add your first one.",
     p_lang: "Language",
     lang_set: "Language set to {}",
+
+    update_available: "Tuxius {} is out — run {}",
+    update_checking: "Checking for updates…",
+    update_downloading: "Downloading {}…",
+    update_done: "Updated to {}",
+    update_current: "Already up to date ({})",
+    update_ahead: "This build ({}) is newer than the latest release ({})",
+    update_sudo: "Replacing {} needs your password",
+    update_failed: "Could not install the update",
+    update_no_curl: "curl is required to update",
 };
 
 pub static TR: Texts = Texts {
@@ -476,6 +496,16 @@ pub static TR: Texts = Texts {
     first_server: "Henüz kayıtlı sunucu yok — ilkini ekleyelim.",
     p_lang: "Dil",
     lang_set: "Dil {} olarak ayarlandı",
+
+    update_available: "Tuxius {} çıktı — {} yaz",
+    update_checking: "Güncellemeye bakılıyor…",
+    update_downloading: "{} indiriliyor…",
+    update_done: "{} sürümüne güncellendi",
+    update_current: "Zaten güncel ({})",
+    update_ahead: "Bu sürüm ({}) son yayından ({}) daha yeni",
+    update_sudo: "{} dosyasını değiştirmek için şifren gerekir",
+    update_failed: "Güncelleme kurulamadı",
+    update_no_curl: "Güncellemek için curl gerekli",
 };
 
 pub static RU: Texts = Texts {
@@ -604,6 +634,16 @@ pub static RU: Texts = Texts {
     first_server: "Сохранённых серверов пока нет — давайте добавим первый.",
     p_lang: "Язык",
     lang_set: "Язык изменён: {}",
+
+    update_available: "Вышла Tuxius {} — выполните {}",
+    update_checking: "Проверка обновлений…",
+    update_downloading: "Загрузка {}…",
+    update_done: "Обновлено до {}",
+    update_current: "Уже последняя версия ({})",
+    update_ahead: "Эта сборка ({}) новее последнего выпуска ({})",
+    update_sudo: "Чтобы заменить {}, нужен пароль",
+    update_failed: "Не удалось установить обновление",
+    update_no_curl: "Для обновления нужен curl",
 };
 
 #[cfg(test)]
@@ -662,6 +702,12 @@ mod tests {
                 t.deleted_key,
                 t.key_title,
                 t.lang_set,
+                t.update_available,
+                t.update_downloading,
+                t.update_done,
+                t.update_current,
+                t.update_ahead,
+                t.update_sudo,
             ]
         };
         let en = pairs(&EN);

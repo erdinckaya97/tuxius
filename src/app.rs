@@ -867,6 +867,7 @@ fn server_items(store: &Store) -> Vec<Item> {
 
 pub fn menu(store: &mut Store) -> Result<()> {
     ui::banner();
+    crate::update::announce(true);
     loop {
         if store.servers.is_empty() {
             eprintln!("  {}\n", t().first_server);

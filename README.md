@@ -138,6 +138,7 @@ After that, `tuxius` shows your servers, most recently used first:
 | `tuxius key rm [name]` | Delete a key (refused while a server still uses it) |
 | `tuxius lang [en\|tr\|ru]` | Change the interface language |
 | `tuxius path` | Show where files are stored |
+| `tuxius update` | Download and install the latest version |
 
 `tuxius add` also takes flags for scripting:
 

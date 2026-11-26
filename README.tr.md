@@ -86,6 +86,7 @@ tuxius
 | `tuxius key rm [isim]` | Anahtarı siler (bir sunucu kullanıyorsa izin vermez) |
 | `tuxius lang [en\|tr\|ru]` | Arayüz dilini değiştirir |
 | `tuxius path` | Dosyaların nerede durduğunu gösterir |
+| `tuxius update` | Son sürüme günceller |
 
 ### Giriş yöntemleri
 

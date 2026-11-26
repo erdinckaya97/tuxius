@@ -1,6 +1,6 @@
 [package]
 name = "tuxius"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 rust-version = "1.88"
 description = "Save your SSH servers once, connect with one keystroke. A tiny, modern SSH manager for the terminal."
