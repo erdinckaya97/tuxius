@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## v0.4.0
 
+- `tuxius sync` keeps an encrypted copy of your servers, saved passwords, and SSH keys. On a Mac with iCloud Drive, iCloud is offered. Every system can also use a synced folder (Dropbox, OneDrive, Google Drive, Syncthing, or any other) or a WebDAV address (Nextcloud, ownCloud, or a cloud you host)
+- The copy is encrypted on this computer before it is written. The passphrase stays here
 - The installer asks GitHub which release is current, then downloads that exact file. The old "latest" link kept serving the previous version for a while after a release
 
 ## v0.3.2

@@ -87,6 +87,8 @@ tuxius
 | `tuxius lang [en\|tr\|ru]` | Arayüz dilini değiştirir |
 | `tuxius path` | Dosyaların nerede durduğunu gösterir |
 | `tuxius update` | Son sürüme günceller |
+| `tuxius sync` | Sunucuların şifreli kopyasını iCloud'da, bir klasörde ya da WebDAV bulutunda tutar |
+| `tuxius sync setup` | Bu kopyanın yerini seçer ya da değiştirir |
 
 ### Giriş yöntemleri
 
@@ -95,6 +97,16 @@ tuxius
 - **Kayıtlı şifre** — anahtara izin vermeyen sunucular için; sistemin şifre kasasında saklanır.
 
 Anahtarlar `~/.config/tuxius/keys/` altında (chmod 600) durur. Menüden (`⚿ SSH anahtarları`) ya da `tuxius key` ile yönetilir.
+
+### Eşitleme
+
+`tuxius sync` sunucularını, kayıtlı şifrelerini ve SSH anahtarlarını şifreli bir kopyada tutar. Dosya bu bilgisayardan çıkmadan kilitlenir. Parola kopyanın içinde durmaz; bu bilgisayarda, varsa sistem anahtar zincirinde saklanır.
+
+- **iCloud** — iCloud Drive açık olan Mac'te listede hazır gelir. Aynı Apple hesabındaki diğer Mac de onu görür.
+- **Klasör** — Dropbox, OneDrive, Google Drive, Syncthing ya da diğer bilgisayarda görünen herhangi bir klasör.
+- **Adres** — WebDAV klasörü. Nextcloud, ownCloud ve kendi kurduğun çoğu bulut bunu kullanır: `https://cloud.example/remote.php/dav/files/adin`. Listede adı olmayan bir bulut da, klasör eşitliyorsa ya da WebDAV adresi varsa bağlanır.
+
+iCloud yalnızca Mac seçeneğidir. Windows ve Linux'ta klasör ve adres çıkar. Mac'te bu ikisi de durur. Önce sunucuların durduğu bilgisayarda kur, sonra diğerinde `tuxius sync` deyip aynı parolayı yaz.
 
 ### Dil
 
@@ -105,6 +117,7 @@ Tuxius **English**, **Türkçe** ve **Русский** konuşur. Varsayılan ola
 - **SSH anahtarı (varsayılan, önerilen).** Tuxius `~/.config/tuxius/keys/tuxius` adında kendi anahtarını oluşturur, şifreyi **bir kez** kullanarak açık anahtarı sunucunun `~/.ssh/authorized_keys` dosyasına ekler. Şifre diske yazılmaz.
 - **Kayıtlı şifre (isteğe bağlı).** Sunucu anahtar kabul etmiyorsa şifreyi kaydetmeyi seçebilirsin. Şifre ayar dosyasına değil, sisteminin şifre kasasına gider: macOS'ta Anahtar Zinciri, Windows'ta Kimlik Bilgisi Yöneticisi, Linux'ta GNOME Keyring / KWallet. Kasası olmayan makinelerde (ör. ekransız sunucular) `~/.config/tuxius/servers.toml` dosyasında, sadece senin okuyabileceğin şekilde (`chmod 600`) saklanır. Eski sürümlerin kaydettiği şifreler otomatik olarak kasaya taşınır.
 - Şifre OpenSSH'a `SSH_ASKPASS` üzerinden verilir, komut satırında görünmez.
+- **Eşitlenen kopya.** `tuxius sync` sunucuları, şifreleri ve anahtarları bu bilgisayarda şifreler, sonra yazar. Parola o dosyada durmaz.
 
 ## Lisans
 

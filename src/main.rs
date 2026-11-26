@@ -5,8 +5,10 @@ mod private;
 mod secrets;
 mod ssh;
 mod store;
+mod sync;
 mod ui;
 mod update;
+mod vault;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -95,6 +97,17 @@ enum Command {
     Path,
     /// Download and install the latest Tuxius
     Update,
+    /// Keep an encrypted copy of your servers in a cloud folder
+    Sync {
+        #[command(subcommand)]
+        action: Option<SyncCommand>,
+    },
+}
+
+#[derive(Subcommand)]
+enum SyncCommand {
+    /// Choose iCloud, a folder, or a WebDAV address
+    Setup,
 }
 
 #[derive(Subcommand)]
@@ -182,7 +195,7 @@ fn run(cli: Cli) -> Result<()> {
             Command::Edit { name } => app::edit(&mut store, name),
             Command::Remove { name, yes, revoke } => app::remove(&mut store, name, yes, revoke),
             Command::Key { action } => match action {
-                None => app::keys_menu(&store),
+                None => app::keys_menu(&mut store),
                 Some(KeyCommand::List) => app::key_list(&store),
                 Some(KeyCommand::Add {
                     name,
@@ -190,15 +203,22 @@ fn run(cli: Cli) -> Result<()> {
                     generate,
                 }) => app::key_add(name, file, generate),
                 Some(KeyCommand::Show { name }) => app::key_show(&store, name),
-                Some(KeyCommand::Remove { name, yes }) => app::key_remove(&store, name, yes),
+                Some(KeyCommand::Remove { name, yes }) => app::key_remove(&mut store, name, yes),
             },
             Command::Lang { code } => app::language(&mut store, code),
             Command::Path => {
                 println!("servers  {}", store.path().display());
                 println!("keys     {}", keys::dir()?.display());
+                if let Some(place) = sync::place() {
+                    println!("sync     {place}");
+                }
                 Ok(())
             }
             Command::Update => update::perform(),
+            Command::Sync { action } => match action {
+                Some(SyncCommand::Setup) => sync::setup(&mut store),
+                None => sync::run(&mut store),
+            },
         },
     }
 }

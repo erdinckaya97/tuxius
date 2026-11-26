@@ -198,7 +198,7 @@ fn read_password_stdin() -> Result<String> {
 }
 
 /// Yes/no prompt that understands the current language's answers.
-fn confirm(message: &str, default: bool) -> Result<bool> {
+pub(crate) fn confirm(message: &str, default: bool) -> Result<bool> {
     let s = t();
     Ok(Confirm::new(message)
         .with_default(default)
@@ -369,12 +369,15 @@ pub fn add(store: &mut Store, opts: AddOptions) -> Result<()> {
         password: None,
         keychain: false,
         last_used: None,
+        changed: None,
     };
     setup_login(&mut server, method, password)?;
+    server.stamp();
 
     let name = server.name.clone();
     store.servers.push(server);
     store.save()?;
+    crate::sync::publish(store);
     ui::ok(&fill(
         t().saved,
         &[
@@ -469,8 +472,10 @@ pub fn edit(store: &mut Store, name: Option<String>) -> Result<()> {
         setup_login(&mut server, method, None)?;
     }
 
+    server.stamp();
     store.servers[idx] = server;
     store.save()?;
+    crate::sync::publish(store);
     if current.keychain && (renamed || !store.servers[idx].keychain) {
         let _ = secrets::delete(&current.name);
     }
@@ -500,8 +505,10 @@ pub fn remove(store: &mut Store, name: Option<String>, yes: bool, revoke: bool) 
             Err(e) => ui::warn(&fill(t().revoke_failed, &[&format!("{e:#}")])),
         }
     }
+    crate::sync::forget_server(&server.name)?;
     store.servers.remove(idx);
     store.save()?;
+    crate::sync::publish(store);
     if server.keychain {
         let _ = secrets::delete(&server.name);
     }
@@ -590,6 +597,7 @@ fn import_key(name: Option<String>, file: Option<String>) -> Result<String> {
         }
     };
     keys::import(&name, &path)?;
+    crate::sync::note_key(&name)?;
     ui::ok(&fill(t().imported, &[&ui::bold(&name)]));
     Ok(name)
 }
@@ -605,6 +613,7 @@ fn generate_key(name: Option<String>) -> Result<String> {
         None => prompt_key_name(None)?,
     };
     keys::generate(&name)?;
+    crate::sync::note_key(&name)?;
     ui::ok(&fill(t().generated, &[&ui::bold(&name)]));
     eprintln!("  {}", ui::dim(t().pubkey_hint));
     println!("{}", keys::public_key(&name)?);
@@ -732,6 +741,7 @@ pub fn key_add(name: Option<String>, file: Option<String>, generate: bool) -> Re
             _ => generate_key(name)?,
         };
     }
+    crate::sync::publish_saved();
     Ok(())
 }
 
@@ -741,7 +751,7 @@ pub fn key_show(store: &Store, name: Option<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn key_remove(store: &Store, name: Option<String>, yes: bool) -> Result<()> {
+pub fn key_remove(store: &mut Store, name: Option<String>, yes: bool) -> Result<()> {
     let name = resolve_key(store, name, t().remove_key_which)?;
     let used = store.servers_using_key(&name);
     if !used.is_empty() {
@@ -754,11 +764,13 @@ pub fn key_remove(store: &Store, name: Option<String>, yes: bool) -> Result<()> 
         }
     }
     keys::remove(&name)?;
+    crate::sync::forget_key(&name)?;
+    crate::sync::publish(store);
     ui::ok(&fill(t().deleted_key, &[&ui::bold(&name)]));
     Ok(())
 }
 
-pub fn keys_menu(store: &Store) -> Result<()> {
+pub fn keys_menu(store: &mut Store) -> Result<()> {
     loop {
         let mut items = key_items(Some(store))?;
         items.push(Item::new(t().import_item, Action::ImportKey));
@@ -769,12 +781,16 @@ pub fn keys_menu(store: &Store) -> Result<()> {
             .with_page_size(14)
             .with_help_message(t().help_back)
             .prompt()?;
+        let uploaded = matches!(choice.action, Action::ImportKey | Action::GenerateKey);
         let result = match choice.action {
             Action::Key(name) => key_actions(store, name),
             Action::ImportKey => import_key(None, None).map(|_| ()),
             Action::GenerateKey => generate_key(None).map(|_| ()),
             _ => return Ok(()),
         };
+        if uploaded && result.is_ok() {
+            crate::sync::publish(store);
+        }
         match result {
             Ok(()) => {}
             Err(e) if is_cancel(&e) => {}
@@ -784,7 +800,7 @@ pub fn keys_menu(store: &Store) -> Result<()> {
     }
 }
 
-fn key_actions(store: &Store, name: String) -> Result<()> {
+fn key_actions(store: &mut Store, name: String) -> Result<()> {
     let s = t();
     let title = fill(s.key_title, &[&name]);
     match Select::new(&title, vec![s.show_pub, s.delete_key, s.back])
@@ -805,6 +821,7 @@ enum Action {
     Edit,
     Remove,
     Keys,
+    Sync,
     Language,
     Quit,
     Key(String),
@@ -868,6 +885,7 @@ fn server_items(store: &Store) -> Vec<Item> {
 pub fn menu(store: &mut Store) -> Result<()> {
     ui::banner();
     crate::update::announce(true);
+    crate::sync::refresh(store);
     loop {
         if store.servers.is_empty() {
             eprintln!("  {}\n", t().first_server);
@@ -887,6 +905,7 @@ pub fn menu(store: &mut Store) -> Result<()> {
         items.push(Item::new(s.menu_edit, Action::Edit));
         items.push(Item::new(s.menu_remove, Action::Remove));
         items.push(Item::new(s.menu_keys, Action::Keys));
+        items.push(Item::new(s.menu_sync, Action::Sync));
         items.push(Item::new(s.menu_lang, Action::Language));
         items.push(Item::new(s.menu_quit, Action::Quit));
 
@@ -909,6 +928,7 @@ pub fn menu(store: &mut Store) -> Result<()> {
             Action::Edit => edit(store, None),
             Action::Remove => remove(store, None, false, false),
             Action::Keys => keys_menu(store),
+            Action::Sync => crate::sync::interactive(store),
             Action::Language => language(store, None),
             _ => return Ok(()),
         };

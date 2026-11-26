@@ -35,6 +35,9 @@ pub struct Server {
     pub keychain: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_used: Option<u64>,
+    /// When this server last changed. Sync uses it to keep the newer copy.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub changed: Option<u64>,
 }
 
 fn default_user() -> String {
@@ -104,11 +107,19 @@ impl Server {
     }
 
     pub fn touch(&mut self) {
-        self.last_used = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .ok()
-            .map(|d| d.as_secs());
+        self.last_used = Some(now_secs());
     }
+
+    pub fn stamp(&mut self) {
+        self.changed = Some(now_secs());
+    }
+}
+
+pub fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -283,6 +294,7 @@ mod tests {
             password: None,
             keychain: false,
             last_used,
+            changed: None,
         }
     }
 

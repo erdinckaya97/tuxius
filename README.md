@@ -115,6 +115,7 @@ After that, `tuxius` shows your servers, most recently used first:
   ✎ Edit a server
   ✕ Remove a server
   ⚿ SSH keys
+  ☁ Sync
   ⚑ Language
   ⏻ Quit
   ↑↓ move · type to filter · enter select · esc quit
@@ -139,6 +140,8 @@ After that, `tuxius` shows your servers, most recently used first:
 | `tuxius lang [en\|tr\|ru]` | Change the interface language |
 | `tuxius path` | Show where files are stored |
 | `tuxius update` | Download and install the latest version |
+| `tuxius sync` | Keep an encrypted copy of your servers in iCloud, a synced folder, or a WebDAV cloud |
+| `tuxius sync setup` | Choose or change where that copy lives |
 
 `tuxius add` also takes flags for scripting:
 
@@ -157,6 +160,16 @@ When you add a server, Tuxius asks how to log in:
 
 Keys live in `~/.config/tuxius/keys/` (chmod 600). Manage them from the menu (`⚿ SSH keys`) or with `tuxius key`.
 
+### Sync
+
+`tuxius sync` keeps an encrypted copy of your servers, saved passwords, and SSH keys. The file is locked on this computer before it is written; the passphrase stays here (in the system keychain when there is one) and is never inside the copy.
+
+- **iCloud** — offered on a Mac when iCloud Drive is turned on. The same Apple ID on another Mac picks it up.
+- **A folder** — Dropbox, OneDrive, Google Drive, Syncthing, or any other folder that shows up on the other computer.
+- **An address** — a WebDAV folder. Nextcloud, ownCloud, and most clouds you host yourself use this: `https://cloud.example/remote.php/dav/files/your-name`. A cloud that is not in the list still works if it syncs a folder or speaks WebDAV.
+
+iCloud is a Mac option. Windows and Linux offer the folder and the address. On a Mac those two are there as well. Set it up on the computer that already has your servers, then run `tuxius sync` on the other one and type the same passphrase.
+
 ### Language
 
 Tuxius speaks **English**, **Türkçe** and **Русский**. It follows your system language (`LANG`) by default. Switch with `tuxius lang ru` or from the menu (`⚑ Language`) — the choice is saved. `TUXIUS_LANG=en` overrides it for a single run.
@@ -167,6 +180,7 @@ Tuxius speaks **English**, **Türkçe** and **Русский**. It follows your 
 - **Saved password (opt-in).** If a server doesn't allow keys, you can choose to save the password. It goes to your system keychain — Keychain on macOS, Credential Manager on Windows, GNOME Keyring / KWallet on Linux — never into the config file. On machines without a keychain (e.g. a headless server) it falls back to `~/.config/tuxius/servers.toml`, readable only by you (`chmod 600`). Passwords saved by older versions move to the keychain automatically.
 - Removing a server can also remove its key from the server (`tuxius rm --revoke`, or answer *yes* in the menu).
 - Passwords are handed to OpenSSH through `SSH_ASKPASS` — never via command-line arguments, so they don't show up in `ps`.
+- **Synced copy.** `tuxius sync` encrypts the servers, passwords, and keys on this computer before writing them anywhere. The passphrase is not in that file.
 - New host keys are accepted on first connect (`StrictHostKeyChecking=accept-new`); a *changed* host key is still refused, just like plain `ssh`.
 
 ## How it works
