@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The installer asks GitHub which release is current, then downloads that exact file. The old "latest" link kept serving the previous version for a while after a release
+
 ## v0.3.2
 
 - `tuxius update` downloads and installs the latest release

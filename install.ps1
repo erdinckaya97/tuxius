@@ -17,7 +17,18 @@ $tmp = Join-Path ([IO.Path]::GetTempPath()) ("tuxius-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
     $zip = Join-Path $tmp 'tuxius.zip'
-    Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/$repo/releases/latest/download/tuxius-$target.zip" -OutFile $zip
+    # /releases/latest/download keeps redirecting to the previous file after a
+    # release. Ask the API for the tag, then download that exact archive.
+    $headers = @{
+        'User-Agent'      = 'tuxius'
+        'Accept'          = 'application/vnd.github+json'
+        'Cache-Control'   = 'no-cache'
+        'Pragma'          = 'no-cache'
+    }
+    $release = Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "https://api.github.com/repos/$repo/releases/latest"
+    $tag = $release.tag_name
+    if (-not $tag) { throw "could not find the latest Tuxius release" }
+    Invoke-WebRequest -UseBasicParsing -Headers @{ 'Cache-Control' = 'no-cache'; 'Pragma' = 'no-cache' } -Uri "https://github.com/$repo/releases/download/$tag/tuxius-$target.zip" -OutFile $zip
     Expand-Archive -Path $zip -DestinationPath $tmp -Force
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Copy-Item -Path (Join-Path $tmp 'tuxius.exe') -Destination (Join-Path $dir 'tuxius.exe') -Force

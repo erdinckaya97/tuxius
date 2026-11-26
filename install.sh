@@ -19,12 +19,37 @@ need() { command -v "$1" >/dev/null 2>&1; }
 
 download() {
     if need curl; then
-        curl -fsSL "$1" -o "$2"
+        curl -fsSL -H "Cache-Control: no-cache" -H "Pragma: no-cache" "$1" -o "$2"
     elif need wget; then
-        wget -qO "$2" "$1"
+        wget -qO "$2" --no-cache "$1"
     else
         die "curl or wget is required"
     fi
+}
+
+# GitHub's /releases/latest/download redirect stays pointed at the previous
+# file for a while after a release. Ask the API, then download that exact tag.
+latest_tag() {
+    if need curl; then
+        json=$(curl -fsSL \
+            -H "User-Agent: tuxius" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Cache-Control: no-cache" \
+            -H "Pragma: no-cache" \
+            "https://api.github.com/repos/$REPO/releases/latest") || return 1
+    elif need wget; then
+        json=$(wget -qO- --no-cache \
+            --header "User-Agent: tuxius" \
+            --header "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/releases/latest") || return 1
+    else
+        return 1
+    fi
+    # The API body is one JSON line; a field split would grab an earlier URL.
+    tag=$(printf '%s' "$json" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    tag=${tag#v}
+    [ -n "$tag" ] || return 1
+    printf '%s\n' "$tag"
 }
 
 detect_target() {
@@ -69,12 +94,12 @@ install_bin() {
 main() {
     need ssh || die "OpenSSH client (ssh) is required"
     target=$(detect_target)
-    version=${TUXIUS_VERSION:-latest}
-    if [ "$version" = latest ]; then
-        url="https://github.com/$REPO/releases/latest/download/$BIN-$target.tar.gz"
-    else
-        url="https://github.com/$REPO/releases/download/$version/$BIN-$target.tar.gz"
+    version=${TUXIUS_VERSION:-}
+    if [ -z "$version" ] || [ "$version" = latest ]; then
+        version=$(latest_tag) || die "could not find the latest Tuxius release"
     fi
+    version=${version#v}
+    url="https://github.com/$REPO/releases/download/v$version/$BIN-$target.tar.gz"
 
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT

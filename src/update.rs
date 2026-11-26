@@ -192,6 +192,10 @@ fn curl_text(url: &str, seconds: u64) -> Result<String> {
             "User-Agent: tuxius",
             "-H",
             "Accept: application/vnd.github+json",
+            "-H",
+            "Cache-Control: no-cache",
+            "-H",
+            "Pragma: no-cache",
             url,
         ])
         .output()
@@ -212,6 +216,10 @@ fn curl_file(url: &str, dest: &Path) -> Result<()> {
             "120",
             "-H",
             "User-Agent: tuxius",
+            "-H",
+            "Cache-Control: no-cache",
+            "-H",
+            "Pragma: no-cache",
             "-o",
         ])
         .arg(dest)
